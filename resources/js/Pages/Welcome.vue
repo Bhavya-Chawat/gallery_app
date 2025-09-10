@@ -1,246 +1,295 @@
 <template>
-    <div
-        class="min-h-screen bg-gradient-to-br from-indigo-100 via-white to-cyan-100"
-    >
-        <!-- Navigation -->
-        <nav class="flex justify-between items-center p-6 max-w-7xl mx-auto">
-            <div class="flex items-center space-x-2">
-                <div
-                    class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center"
-                >
-                    <svg
-                        class="w-5 h-5 text-white"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                    >
-                        <path
-                            fill-rule="evenodd"
-                            d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
-                            clip-rule="evenodd"
-                        ></path>
-                    </svg>
+  <GuestLayout>
+    <!-- Hero Section -->
+    <div class="relative bg-white overflow-hidden">
+      <div class="max-w-7xl mx-auto">
+        <div class="relative z-10 pb-8 bg-white sm:pb-16 md:pb-20 lg:max-w-2xl lg:w-full lg:pb-28 xl:pb-32">
+          <svg
+            class="hidden lg:block absolute right-0 inset-y-0 h-full w-48 text-white transform translate-x-1/2"
+            fill="currentColor"
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+          >
+            <polygon points="50,0 100,0 50,100 0,100" />
+          </svg>
+
+          <main class="mt-10 mx-auto max-w-7xl px-4 sm:mt-12 sm:px-6 md:mt-16 lg:mt-20 lg:px-8 xl:mt-28">
+            <div class="sm:text-center lg:text-left">
+              <h1 class="text-4xl tracking-tight font-extrabold text-gray-900 sm:text-5xl md:text-6xl">
+                <span class="block xl:inline">Modern Image</span>
+                <span class="block text-blue-600 xl:inline">Gallery</span>
+              </h1>
+              <p class="mt-3 text-base text-gray-500 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
+                Discover, share, and organize your photos in a beautiful, responsive gallery. 
+                Upload, manage, and showcase your images with powerful features and seamless organization.
+              </p>
+              <div class="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
+                <div class="rounded-md shadow">
+                  <Link
+                    :href="route('gallery.index')"
+                    class="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 md:py-4 md:text-lg md:px-10"
+                  >
+                    Browse Gallery
+                  </Link>
                 </div>
-                <h1 class="text-xl font-bold text-gray-900">Image Gallery</h1>
-            </div>
-
-            <div class="flex items-center space-x-4" v-if="canLogin">
-                <Link
-                    v-if="$page.props.auth.user"
-                    :href="route('dashboard')"
-                    class="text-gray-700 hover:text-indigo-600 font-medium"
-                >
-                    Dashboard
-                </Link>
-                <template v-else>
-                    <Link
-                        :href="route('login')"
-                        class="text-gray-700 hover:text-indigo-600 font-medium"
-                    >
-                        Log in
-                    </Link>
-                    <Link
-                        v-if="canRegister"
-                        :href="route('register')"
-                        class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 font-medium"
-                    >
-                        Register
-                    </Link>
-                </template>
-            </div>
-        </nav>
-
-        <!-- Hero Section -->
-        <div class="max-w-7xl mx-auto px-6 py-24">
-            <div class="text-center">
-                <h2 class="text-5xl font-bold text-gray-900 mb-6">
-                    Manage Your Images
-                    <span class="text-indigo-600">Beautifully</span>
-                </h2>
-                <p class="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-                    A modern image gallery application built with Laravel 11,
-                    Vue 3, Inertia.js, and Tailwind CSS. Upload, organize, and
-                    share your photos with ease.
-                </p>
-
-                <div class="flex justify-center space-x-4">
-                    <Link
-                        v-if="!$page.props.auth.user"
-                        :href="route('register')"
-                        class="bg-indigo-600 text-white px-8 py-3 rounded-lg hover:bg-indigo-700 font-medium text-lg"
-                    >
-                        Get Started
-                    </Link>
-                    <Link
-                        v-else
-                        :href="route('dashboard')"
-                        class="bg-indigo-600 text-white px-8 py-3 rounded-lg hover:bg-indigo-700 font-medium text-lg"
-                    >
-                        Go to Dashboard
-                    </Link>
-                    <a
-                        href="#features"
-                        class="border border-gray-300 text-gray-700 px-8 py-3 rounded-lg hover:bg-gray-50 font-medium text-lg"
-                    >
-                        Learn More
-                    </a>
+                <div class="mt-3 sm:mt-0 sm:ml-3">
+                  <Link
+                    v-if="canRegister"
+                    :href="route('register')"
+                    class="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 md:py-4 md:text-lg md:px-10"
+                  >
+                    Get Started
+                  </Link>
                 </div>
+              </div>
             </div>
+          </main>
         </div>
-
-        <!-- Features Section -->
-        <div id="features" class="max-w-7xl mx-auto px-6 py-16">
-            <div class="text-center mb-16">
-                <h3 class="text-3xl font-bold text-gray-900 mb-4">Features</h3>
-                <p class="text-gray-600">
-                    Everything you need for modern image management
-                </p>
-            </div>
-
-            <div class="grid md:grid-cols-3 gap-8">
-                <div class="bg-white p-6 rounded-xl shadow-sm border">
-                    <div
-                        class="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4"
-                    >
-                        <svg
-                            class="w-6 h-6 text-indigo-600"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                            ></path>
-                        </svg>
-                    </div>
-                    <h4 class="text-xl font-semibold mb-2">Easy Upload</h4>
-                    <p class="text-gray-600">
-                        Drag and drop or click to upload multiple images at once
-                        with progress tracking.
-                    </p>
-                </div>
-
-                <div class="bg-white p-6 rounded-xl shadow-sm border">
-                    <div
-                        class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4"
-                    >
-                        <svg
-                            class="w-6 h-6 text-green-600"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                            ></path>
-                        </svg>
-                    </div>
-                    <h4 class="text-xl font-semibold mb-2">
-                        Smart Organization
-                    </h4>
-                    <p class="text-gray-600">
-                        Organize images in albums, add tags, and use powerful
-                        search functionality.
-                    </p>
-                </div>
-
-                <div class="bg-white p-6 rounded-xl shadow-sm border">
-                    <div
-                        class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4"
-                    >
-                        <svg
-                            class="w-6 h-6 text-purple-600"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
-                            ></path>
-                        </svg>
-                    </div>
-                    <h4 class="text-xl font-semibold mb-2">Easy Sharing</h4>
-                    <p class="text-gray-600">
-                        Share albums and individual photos with customizable
-                        privacy settings.
-                    </p>
-                </div>
-            </div>
+      </div>
+      
+      <!-- Hero Image -->
+      <div class="lg:absolute lg:inset-y-0 lg:right-0 lg:w-1/2">
+        <div class="h-56 w-full sm:h-72 md:h-96 lg:w-full lg:h-full bg-gradient-to-br from-blue-400 to-purple-600 flex items-center justify-center">
+          <div class="text-white text-center">
+            <PhotoIcon class="mx-auto h-24 w-24 mb-4 opacity-80" />
+            <p class="text-lg">Beautiful Gallery Preview</p>
+          </div>
         </div>
-
-        <!-- Tech Stack Section -->
-        <div class="bg-gray-50 py-16">
-            <div class="max-w-7xl mx-auto px-6 text-center">
-                <h3 class="text-3xl font-bold text-gray-900 mb-4">
-                    Built with Modern Technology
-                </h3>
-                <p class="text-gray-600 mb-8">
-                    Powered by industry-leading frameworks and tools
-                </p>
-
-                <div
-                    class="flex flex-wrap justify-center items-center space-x-8 space-y-4"
-                >
-                    <div
-                        class="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg shadow-sm"
-                    >
-                        <span class="text-red-500 font-semibold"
-                            >Laravel 11</span
-                        >
-                    </div>
-                    <div
-                        class="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg shadow-sm"
-                    >
-                        <span class="text-green-500 font-semibold">Vue 3</span>
-                    </div>
-                    <div
-                        class="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg shadow-sm"
-                    >
-                        <span class="text-purple-500 font-semibold"
-                            >Inertia.js</span
-                        >
-                    </div>
-                    <div
-                        class="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg shadow-sm"
-                    >
-                        <span class="text-blue-500 font-semibold"
-                            >Tailwind CSS</span
-                        >
-                    </div>
-                    <div
-                        class="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg shadow-sm"
-                    >
-                        <span class="text-blue-600 font-semibold">Docker</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Footer -->
-        <footer class="bg-white py-8">
-            <div class="max-w-7xl mx-auto px-6 text-center">
-                <p class="text-gray-600">
-                    © {{ new Date().getFullYear() }} Image Gallery. Built with
-                    ❤️ using Laravel Breeze.
-                </p>
-            </div>
-        </footer>
+      </div>
     </div>
+
+    <!-- Stats Section -->
+    <div class="bg-blue-50">
+      <div class="max-w-7xl mx-auto py-12 px-4 sm:py-16 sm:px-6 lg:px-8 lg:py-20">
+        <div class="max-w-4xl mx-auto text-center">
+          <h2 class="text-3xl font-extrabold text-gray-900 sm:text-4xl">
+            Trusted by photographers worldwide
+          </h2>
+          <p class="mt-3 text-xl text-gray-500 sm:mt-4">
+            Join thousands of users sharing their visual stories
+          </p>
+        </div>
+        <dl class="mt-10 text-center sm:max-w-3xl sm:mx-auto sm:grid sm:grid-cols-3 sm:gap-8">
+          <div class="flex flex-col">
+            <dt class="order-2 mt-2 text-lg leading-6 font-medium text-gray-500">
+              Images Shared
+            </dt>
+            <dd class="order-1 text-5xl font-extrabold text-blue-600">
+              {{ formatNumber(stats.total_images) }}
+            </dd>
+          </div>
+          <div class="flex flex-col mt-10 sm:mt-0">
+            <dt class="order-2 mt-2 text-lg leading-6 font-medium text-gray-500">
+              Albums Created
+            </dt>
+            <dd class="order-1 text-5xl font-extrabold text-blue-600">
+              {{ formatNumber(stats.total_albums) }}
+            </dd>
+          </div>
+          <div class="flex flex-col mt-10 sm:mt-0">
+            <dt class="order-2 mt-2 text-lg leading-6 font-medium text-gray-500">
+              Active Users
+            </dt>
+            <dd class="order-1 text-5xl font-extrabold text-blue-600">
+              {{ formatNumber(stats.total_users) }}
+            </dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+
+    <!-- Featured Images Section -->
+    <div class="bg-white" v-if="featuredImages.length > 0">
+      <div class="max-w-7xl mx-auto py-12 px-4 sm:py-16 sm:px-6 lg:px-8">
+        <div class="text-center">
+          <h2 class="text-3xl font-extrabold text-gray-900 sm:text-4xl">
+            Featured Images
+          </h2>
+          <p class="mt-3 max-w-2xl mx-auto text-xl text-gray-500 sm:mt-4">
+            Discover amazing photography from our community
+          </p>
+        </div>
+        
+        <div class="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div
+            v-for="image in featuredImages"
+            :key="image.id"
+            class="group relative aspect-square bg-gray-100 rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
+          >
+            <img
+              :src="getImageUrl(image, 'medium')"
+              :alt="image.alt_text || image.title"
+              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            >
+            <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300">
+              <div class="absolute bottom-0 left-0 right-0 p-4 text-white transform translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+                <h3 class="font-medium truncate">{{ image.title || 'Untitled' }}</h3>
+                <p class="text-sm opacity-75">by {{ image.owner?.name }}</p>
+              </div>
+            </div>
+            <Link
+              :href="route('images.show', image.slug)"
+              class="absolute inset-0"
+            >
+              <span class="sr-only">View {{ image.title }}</span>
+            </Link>
+          </div>
+        </div>
+
+        <div class="mt-12 text-center">
+          <Link
+            :href="route('gallery.index')"
+            class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200"
+          >
+            View All Images
+            <ArrowRightIcon class="ml-2 h-5 w-5" />
+          </Link>
+        </div>
+      </div>
+    </div>
+
+    <!-- Featured Albums Section -->
+    <div class="bg-gray-50" v-if="featuredAlbums.length > 0">
+      <div class="max-w-7xl mx-auto py-12 px-4 sm:py-16 sm:px-6 lg:px-8">
+        <div class="text-center">
+          <h2 class="text-3xl font-extrabold text-gray-900 sm:text-4xl">
+            Featured Albums
+          </h2>
+          <p class="mt-3 max-w-2xl mx-auto text-xl text-gray-500 sm:mt-4">
+            Curated collections from talented photographers
+          </p>
+        </div>
+        
+        <div class="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div
+            v-for="album in featuredAlbums"
+            :key="album.id"
+            class="bg-white rounded-lg shadow hover:shadow-lg transition-shadow overflow-hidden"
+          >
+            <div class="aspect-w-16 aspect-h-9 bg-gray-100">
+              <img
+                v-if="album.cover_image"
+                :src="getImageUrl(album.cover_image, 'medium')"
+                :alt="album.title"
+                class="w-full h-full object-cover"
+              >
+              <div v-else class="flex items-center justify-center">
+                <FolderIcon class="h-12 w-12 text-gray-400" />
+              </div>
+            </div>
+            <div class="p-6">
+              <h3 class="text-lg font-medium text-gray-900 truncate">
+                {{ album.title }}
+              </h3>
+              <p class="mt-1 text-sm text-gray-500 line-clamp-2">
+                {{ album.description }}
+              </p>
+              <div class="mt-4 flex items-center justify-between">
+                <span class="text-sm text-gray-500">
+                  {{ album.images_count }} image{{ album.images_count !== 1 ? 's' : '' }}
+                </span>
+                <Link
+                  :href="route('albums.show', album.slug)"
+                  class="text-sm font-medium text-blue-600 hover:text-blue-500"
+                >
+                  View Album
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-12 text-center">
+          <Link
+            :href="route('albums.index')"
+            class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200"
+          >
+            Browse Albums
+            <ArrowRightIcon class="ml-2 h-5 w-5" />
+          </Link>
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA Section -->
+    <div class="bg-blue-600">
+      <div class="max-w-7xl mx-auto py-12 px-4 sm:py-16 sm:px-6 lg:px-8 lg:flex lg:items-center lg:justify-between">
+        <h2 class="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+          <span class="block">Ready to share your photos?</span>
+          <span class="block text-blue-200">Start your gallery today.</span>
+        </h2>
+        <div class="mt-8 flex lg:mt-0 lg:flex-shrink-0">
+          <div class="inline-flex rounded-md shadow">
+            <Link
+              v-if="canRegister"
+              :href="route('register')"
+              class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-blue-600 bg-white hover:bg-blue-50"
+            >
+              Sign up free
+            </Link>
+          </div>
+          <div class="ml-3 inline-flex rounded-md shadow">
+            <Link
+              :href="canLogin ? route('login') : route('gallery.index')"
+              class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-500 hover:bg-blue-400"
+            >
+              {{ canLogin ? 'Sign in' : 'Browse Gallery' }}
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  </GuestLayout>
 </template>
 
 <script setup>
-import { Link } from "@inertiajs/vue3";
+import { computed } from 'vue'
+import { Head, Link } from '@inertiajs/vue3'
+import { route } from 'ziggy-js'
+import {
+  PhotoIcon,
+  FolderIcon,
+  ArrowRightIcon,
+} from '@heroicons/vue/24/outline'
 
-defineProps({
-    canLogin: Boolean,
-    canRegister: Boolean,
-});
+import GuestLayout from '@/Layouts/GuestLayout.vue'
+
+const props = defineProps({
+  canLogin: Boolean,
+  canRegister: Boolean,
+  featuredImages: {
+    type: Array,
+    default: () => [],
+  },
+  featuredAlbums: {
+    type: Array,
+    default: () => [],
+  },
+  stats: {
+    type: Object,
+    default: () => ({
+      total_images: 0,
+      total_albums: 0,
+      total_users: 0,
+    }),
+  },
+})
+
+const formatNumber = (number) => {
+  if (number >= 1000000) {
+    return (number / 1000000).toFixed(1) + 'M'
+  } else if (number >= 1000) {
+    return (number / 1000).toFixed(1) + 'K'
+  }
+  return number.toString()
+}
+
+const getImageUrl = (image, variant = 'medium') => {
+  if (image.versions) {
+    const version = image.versions.find(v => v.variant === variant)
+    if (version) return version.url
+  }
+  return image.url || image.storage_path
+}
 </script>
