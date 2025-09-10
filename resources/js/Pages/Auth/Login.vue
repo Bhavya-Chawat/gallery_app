@@ -7,21 +7,20 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 
+// Breeze expects these props (see AuthenticatedSessionController)
 defineProps({
-    canResetPassword: {
-        type: Boolean,
-    },
-    status: {
-        type: String,
-    },
+    canResetPassword: Boolean,
+    status: String,
 });
 
+// Inertia form helper
 const form = useForm({
     email: '',
     password: '',
     remember: false,
 });
 
+// Submit using Breeze's login route
 const submit = () => {
     form.post(route('login'), {
         onFinish: () => form.reset('password'),
@@ -33,11 +32,13 @@ const submit = () => {
     <GuestLayout>
         <Head title="Log in" />
 
+        <!-- Status message (used for things like "Password reset link sent") -->
         <div v-if="status" class="mb-4 text-sm font-medium text-green-600">
             {{ status }}
         </div>
 
         <form @submit.prevent="submit">
+            <!-- Email -->
             <div>
                 <InputLabel for="email" value="Email" />
 
@@ -54,6 +55,7 @@ const submit = () => {
                 <InputError class="mt-2" :message="form.errors.email" />
             </div>
 
+            <!-- Password -->
             <div class="mt-4">
                 <InputLabel for="password" value="Password" />
 
@@ -69,15 +71,15 @@ const submit = () => {
                 <InputError class="mt-2" :message="form.errors.password" />
             </div>
 
+            <!-- Remember Me -->
             <div class="mt-4 block">
                 <label class="flex items-center">
                     <Checkbox name="remember" v-model:checked="form.remember" />
-                    <span class="ms-2 text-sm text-gray-600"
-                        >Remember me</span
-                    >
+                    <span class="ms-2 text-sm text-gray-600">Remember me</span>
                 </label>
             </div>
 
+            <!-- Actions -->
             <div class="mt-4 flex items-center justify-end">
                 <Link
                     v-if="canResetPassword"

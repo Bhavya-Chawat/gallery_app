@@ -1,26 +1,25 @@
-<?php
+    <?php
 
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
+    use Illuminate\Database\Migrations\Migration;
+    use Illuminate\Database\Schema\Blueprint;
+    use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
-    public function up(): void
+    return new class extends Migration
     {
-        Schema::create('image_tag', function (Blueprint $table) {
-            $table->id();
-            $table->foreignUuid('image_id')->constrained()->onDelete('cascade');
-            $table->foreignId('tag_id')->constrained()->onDelete('cascade');
-            $table->timestamp('tagged_at')->useCurrent();
+        public function up(): void
+        {
+            Schema::create('image_tag', function (Blueprint $table) {
+                $table->id();   
+                $table->foreignUuid('image_id')->constrained()->onDelete('cascade');
+                $table->foreignId('tag_id')->constrained()->onDelete('cascade');
+                $table->unique(['image_id', 'tag_id']);
+                $table->index('tag_id');
+                $table->timestamps();
+            });
+        }
 
-            $table->unique(['image_id', 'tag_id']);
-            $table->index('tag_id');
-        });
-    }
-
-    public function down(): void
-    {
-        Schema::dropIfExists('image_tag');
-    }
-};
+        public function down(): void
+        {
+            Schema::dropIfExists('image_tag');
+        }
+    };
