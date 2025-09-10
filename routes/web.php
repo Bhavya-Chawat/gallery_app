@@ -74,7 +74,7 @@ Route::get('/images/{image:slug}/download', [ImageController::class, 'download']
 require __DIR__.'/auth.php';
 
 // Authenticated routes
-Route::middleware(['auth', 'verified', 'active_user', 'update_last_login'])->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
     
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');

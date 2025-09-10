@@ -118,7 +118,7 @@
 <script setup>
 import { computed } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
-import { route } from 'ziggy-js'
+import route from 'ziggy-js'
 import {
   EyeIcon,
   HeartIcon,

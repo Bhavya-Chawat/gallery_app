@@ -146,7 +146,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
-import { route } from 'ziggy-js'
+import route from 'ziggy-js'
 import {
   XMarkIcon,
   ChevronLeftIcon,

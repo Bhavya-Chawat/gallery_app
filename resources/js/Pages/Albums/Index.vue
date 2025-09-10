@@ -118,7 +118,7 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { Head, Link, router } from '@inertiajs/vue3'
-import { route } from 'ziggy-js'
+import route from 'ziggy-js'
 import {
   PlusIcon,
   FolderIcon,

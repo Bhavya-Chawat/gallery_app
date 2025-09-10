@@ -137,7 +137,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { usePage } from '@inertiajs/vue3'
-import { route } from 'ziggy-js'
+import route from 'ziggy-js'
 
 import SidebarLink from './SidebarLink.vue'
 import SystemStatus from './SystemStatus.vue'

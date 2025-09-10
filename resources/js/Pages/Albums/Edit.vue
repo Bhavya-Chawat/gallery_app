@@ -170,7 +170,7 @@
 
 <script setup>
 import { Head, Link, useForm, router } from '@inertiajs/vue3'
-import { route } from 'ziggy-js'
+import route from 'ziggy-js'
 import { ChevronRightIcon } from '@heroicons/vue/24/outline'
 
 import AppLayout from '@/Layouts/AppLayout.vue'

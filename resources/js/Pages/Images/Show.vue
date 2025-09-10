@@ -268,7 +268,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { Head, Link, router, usePage } from '@inertiajs/vue3'
-import { route } from 'ziggy-js'
+import route from 'ziggy-js'
 import {
   ChevronRightIcon,
   ChevronDownIcon,
