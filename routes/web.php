@@ -62,8 +62,13 @@ Route::get('/albums', [AlbumController::class, 'index'])->name('albums.index');
 Route::get('/collections', [CollectionController::class, 'index'])->name('collections.index');
 
 // Public album and image viewing
-Route::get('/albums/{album:slug}', [AlbumController::class, 'show'])->name('albums.show');
-Route::get('/collections/{collection:slug}', [CollectionController::class, 'show'])->name('collections.show');
+// Add constraints so wildcard slug doesn't eat reserved paths like "create" or action endpoints
+Route::get('/albums/{album:slug}', [AlbumController::class, 'show'])
+    ->where('album', '^(?!create$|edit$|reorder$|add-images$|remove-images$|toggle-publish$).+')
+    ->name('albums.show');
+Route::get('/collections/{collection:slug}', [CollectionController::class, 'show'])
+    ->where('collection', '^(?!create$|edit$|add-item$|remove-item$|reorder$|toggle-publish$).+')
+    ->name('collections.show');
 Route::get('/images/{image:slug}', [ImageController::class, 'show'])->name('images.show');
 
 // Image download
@@ -140,9 +145,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/upload', function () {
         return Inertia::render('Images/Upload', [
             'albums' => auth()->user()->albums()->select('id', 'title')->get(),
-            'maxUploadSize' => config('gallery.max_upload_size', 52428800),
-            'allowedMimes' => config('gallery.allowed_mimes', 'jpg,jpeg,png,webp,avif'),
-            'defaultPrivacy' => config('gallery.default_privacy', 'unlisted'),
+            'maxUploadSize' => config('filesystems.gallery.max_upload_size', 52428800),
+            'allowedMimes' => implode(',', config('filesystems.gallery.allowed_extensions', ['jpg','jpeg','png','webp','avif'])),
+            'allowedExtensions' => implode(',', config('filesystems.gallery.allowed_extensions', ['jpg','jpeg','png','webp','avif'])),
+            'defaultPrivacy' => config('filesystems.gallery.default_privacy', 'unlisted'),
             'storageUsage' => [
                 'used' => auth()->user()->storage_used_bytes,
                 'quota' => auth()->user()->storage_quota_bytes,
@@ -151,6 +157,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ],
         ]);
     })->name('upload')->middleware('can:create,App\Models\Image');
+
+    // Handle direct uploads from the Upload page (maps to existing API logic)
+    Route::post('/upload', [\App\Http\Controllers\Api\UploadController::class, 'direct'])
+        ->name('upload.store');
 });
 
 // Admin Routes

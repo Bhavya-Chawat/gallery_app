@@ -288,23 +288,13 @@ import CommentsSection from '@/Components/CommentsSection.vue'
 const page = usePage()
 
 const props = defineProps({
-  image: Object,
-  relatedImages: {
-    type: Array,
-    default: () => [],
-  },
-  comments: {
-    type: Array,
-    default: () => [],
-  },
-  userLike: {
-    type: Boolean,
-    default: false,
-  },
-  can: {
-    type: Object,
-    default: () => ({}),
-  },
+  image: { type: Object, default: () => ({}) },
+  relatedImages: { type: Array, default: () => [] },
+  comments: { type: Array, default: () => [] },
+  userLike: { type: Boolean, default: false },
+  can: { type: Object, default: () => ({}) },
+  auth: { type: Object, default: () => ({ user: null, roles: [] }) },
+  errors: { type: Object, default: () => ({}) },
 })
 
 const lightboxOpen = ref(false)

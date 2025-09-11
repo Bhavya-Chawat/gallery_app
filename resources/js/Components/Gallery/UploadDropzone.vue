@@ -8,15 +8,6 @@
     @dragleave.prevent="handleDragLeave"
     @drop.prevent="handleDrop"
   >
-    <input
-      ref="fileInput"
-      type="file"
-      multiple
-      :accept="acceptedTypes"
-      @change="handleFileSelect"
-      class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-    />
-
     <div class="space-y-4">
       <!-- Upload Icon -->
       <div class="mx-auto h-12 w-12 text-gray-400">
@@ -28,15 +19,13 @@
         <h3 class="text-lg font-medium text-gray-900">
           {{ isDragOver ? 'Drop files here' : 'Upload images' }}
         </h3>
-        <p class="mt-1 text-sm text-gray-500">
-          Drag and drop files here, or click to select files
-        </p>
+        <p class="mt-1 text-sm text-gray-500">Drag and drop files here</p>
       </div>
 
       <!-- File Requirements -->
       <div class="text-xs text-gray-400 space-y-1">
-        <p>Supported formats: {{ allowedExtensions.join(', ').toUpperCase() }}</p>
-        <p>Maximum file size: {{ formatBytes(maxFileSize) }}</p>
+        <p>Supported formats: {{ normalizedExtensions.map(e => e.toUpperCase()).join(', ') }}</p>
+        <p>Maximum file size: {{ formatBytes(computedMaxSize) }}</p>
         <p v-if="maxFiles">Maximum {{ maxFiles }} files</p>
       </div>
 
@@ -50,48 +39,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Upload Progress -->
-    <div v-if="uploading" class="mt-4">
-      <div class="bg-gray-200 rounded-full h-2">
-        <div 
-          class="bg-blue-600 h-2 rounded-full transition-all duration-300"
-          :style="{ width: `${uploadProgress}%` }"
-        ></div>
-      </div>
-      <p class="mt-2 text-sm text-gray-600">
-        Uploading {{ uploadedFiles }}/{{ totalFiles }} files...
-      </p>
-    </div>
-
-    <!-- File Preview -->
-    <div v-if="selectedFiles.length" class="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-      <div 
-        v-for="(file, index) in selectedFiles.slice(0, 8)"
-        :key="index"
-        class="relative aspect-square bg-gray-100 rounded-lg overflow-hidden"
-      >
-        <img
-          :src="file.preview"
-          :alt="file.name"
-          class="w-full h-full object-cover"
-        />
-        <button
-          @click="removeFile(index)"
-          class="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-        >
-          <XMarkIcon class="h-3 w-3" />
-        </button>
-      </div>
-      <div 
-        v-if="selectedFiles.length > 8"
-        class="aspect-square bg-gray-200 rounded-lg flex items-center justify-center"
-      >
-        <span class="text-sm text-gray-500">
-          +{{ selectedFiles.length - 8 }} more
-        </span>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -100,13 +47,22 @@ import { ref, computed } from 'vue'
 import {
   CloudArrowUpIcon,
   ExclamationTriangleIcon,
-  XMarkIcon,
 } from '@heroicons/vue/24/outline'
 
 const props = defineProps({
+  // Preferred formats as comma-separated list
+  acceptedFormats: {
+    type: [String, Array],
+    default: 'jpg,jpeg,png,webp,avif'
+  },
+  // Back-compat prop (if provided, takes precedence)
   acceptedTypes: {
     type: String,
-    default: 'image/*'
+    default: ''
+  },
+  maxSize: {
+    type: Number,
+    default: null
   },
   maxFileSize: {
     type: Number,
@@ -122,17 +78,29 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['files-selected', 'upload-progress', 'upload-complete'])
+const emit = defineEmits(['files-selected'])
 
-const fileInput = ref(null)
 const isDragOver = ref(false)
 const selectedFiles = ref([])
-const uploading = ref(false)
-const uploadProgress = ref(0)
-const uploadedFiles = ref(0)
-const totalFiles = ref(0)
 
-const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'avif']
+const defaultExtensions = ['jpg', 'jpeg', 'png', 'webp', 'avif']
+
+const normalizedExtensions = computed(() => {
+  if (Array.isArray(props.acceptedFormats)) {
+    return props.acceptedFormats.map(s => String(s).trim().toLowerCase()).filter(Boolean)
+  }
+  return (props.acceptedFormats || '')
+    .split(',')
+    .map(s => s.trim().toLowerCase())
+    .filter(Boolean)
+    .concat([])
+    .filter((v, i, a) => a.indexOf(v) === i)
+    || defaultExtensions
+})
+
+const computedMaxSize = computed(() => props.maxSize || props.maxFileSize)
+
+// Note: input click removed; drag-and-drop only
 
 const handleDragOver = () => {
   isDragOver.value = true
@@ -148,21 +116,25 @@ const handleDrop = (e) => {
   processFiles(files)
 }
 
-const handleFileSelect = (e) => {
-  const files = Array.from(e.target.files)
-  processFiles(files)
-}
-
 const processFiles = (files) => {
-  const validFiles = files.filter(file => {
+  let incoming = files
+  if (props.maxFiles && files.length > props.maxFiles) {
+    incoming = files.slice(0, props.maxFiles)
+    console.warn(`Only the first ${props.maxFiles} files will be used.`)
+  }
+
+  const validFiles = incoming.filter(file => {
     // Check file type
-    if (!file.type.startsWith('image/')) {
-      console.warn(`File ${file.name} is not a valid image`)
-      return false
+    if (!(file.type && file.type.startsWith('image/'))) {
+      const nameExt = (file.name.split('.').pop() || '').toLowerCase()
+      if (!normalizedExtensions.value.includes(nameExt)) {
+        console.warn(`File ${file.name} is not a valid image`)
+        return false
+      }
     }
     
     // Check file size
-    if (file.size > props.maxFileSize) {
+    if (file.size > computedMaxSize.value) {
       console.warn(`File ${file.name} is too large`)
       return false
     }
@@ -170,24 +142,8 @@ const processFiles = (files) => {
     return true
   })
 
-  // Create preview URLs
-  const filesWithPreviews = validFiles.map(file => ({
-    file,
-    name: file.name,
-    size: file.size,
-    preview: URL.createObjectURL(file)
-  }))
-
-  selectedFiles.value = filesWithPreviews
+  selectedFiles.value = validFiles.map(file => ({ name: file.name, size: file.size }))
   emit('files-selected', validFiles)
-}
-
-const removeFile = (index) => {
-  const removed = selectedFiles.value.splice(index, 1)
-  // Clean up preview URL
-  if (removed[0]?.preview) {
-    URL.revokeObjectURL(removed[0].preview)
-  }
 }
 
 const formatBytes = (bytes) => {
@@ -197,4 +153,6 @@ const formatBytes = (bytes) => {
   const i = Math.floor(Math.log(bytes) / Math.log(k))
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
+
+// Drag-and-drop only; parent page handles submission
 </script>

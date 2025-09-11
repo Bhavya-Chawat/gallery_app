@@ -130,15 +130,11 @@ import AlbumCard from '@/Components/Gallery/AlbumCard.vue'
 import Pagination from '@/Components/Pagination.vue'
 
 const props = defineProps({
-  albums: Object,
-  filters: {
-    type: Object,
-    default: () => ({}),
-  },
-  canCreate: {
-    type: Boolean,
-    default: false,
-  },
+  albums: { type: Object, default: () => ({ data: [], links: [], meta: {} }) },
+  filters: { type: Object, default: () => ({}) },
+  canCreate: { type: Boolean, default: false },
+  auth: { type: Object, default: () => ({ user: null, roles: [] }) },
+  errors: { type: Object, default: () => ({}) },
 })
 
 const searchForm = reactive({

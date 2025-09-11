@@ -1,5 +1,6 @@
 <template>
-  <Modal v-model="localOpen" title="System Maintenance" size="lg">
+  <Modal :show="localOpen" @close="localOpen = false">
+    <div class="text-lg font-medium mb-4">System Maintenance</div>
     <div class="space-y-6">
       <p class="text-sm text-gray-600">
         Select maintenance tasks to run. These operations may take some time to complete.
@@ -71,9 +72,7 @@
           </div>
         </div>
       </div>
-    </div>
 
-    <template #footer>
       <div class="flex justify-end space-x-3">
         <button
           @click="localOpen = false"
@@ -89,7 +88,7 @@
           Clear Results
         </button>
       </div>
-    </template>
+    </div>
   </Modal>
 </template>
 

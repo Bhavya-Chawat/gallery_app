@@ -47,6 +47,11 @@ class AlbumController extends Controller
             'albums' => $albums,
             'filters' => $request->only(['search', 'owner']),
             'canCreate' => auth()->check() && auth()->user()->can('create', Album::class),
+            'auth' => [
+                'user' => auth()->user(),
+                'roles' => auth()->user()?->roles ?? [],
+            ],
+            'errors' => session('errors') ?? [],
         ]);
     }
 
@@ -169,6 +174,11 @@ class AlbumController extends Controller
                 'delete' => auth()->user()?->can('delete', $album) ?? false,
                 'manageImages' => auth()->user()?->can('manageImages', $album) ?? false,
             ],
+            'auth' => [
+                'user' => auth()->user(),
+                'roles' => auth()->user()?->roles ?? [],
+            ],
+            'errors' => session('errors') ?? [],
         ]);
     }
 

@@ -50,6 +50,18 @@ export default defineConfig({
     hmr: {
       host: 'localhost',
     },
+    proxy: {
+      '/api': {
+        target: process.env.VITE_BACKEND_URL || 'http://localhost',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/sanctum': {
+        target: process.env.VITE_BACKEND_URL || 'http://localhost',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
   optimizeDeps: {
     include: [

@@ -29,9 +29,10 @@
       <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
         <!-- Filters -->
         <FiltersPanel
-          v-model="searchForm"
+          :filters="searchForm"
           :albums="albums"
           :tags="tags"
+          @update:filters="(val) => Object.assign(searchForm, val)"
           @search="search"
           class="mb-6"
         />
@@ -146,23 +147,13 @@ import Pagination from '@/Components/Pagination.vue'
 const page = usePage()
 
 const props = defineProps({
-  images: Object,
-  albums: {
-    type: Array,
-    default: () => [],
-  },
-  tags: {
-    type: Array,
-    default: () => [],
-  },
-  filters: {
-    type: Object,
-    default: () => ({}),
-  },
-  canUpload: {
-    type: Boolean,
-    default: false,
-  },
+  images: { type: Object, default: () => ({ data: [], links: [], meta: {} }) },
+  albums: { type: Array, default: () => [] },
+  tags: { type: Array, default: () => [] },
+  filters: { type: Object, default: () => ({}) },
+  canUpload: { type: Boolean, default: false },
+  auth: { type: Object, default: () => ({ user: null, roles: [] }) },
+  errors: { type: Object, default: () => ({}) },
 })
 
 const gridSize = ref('medium')

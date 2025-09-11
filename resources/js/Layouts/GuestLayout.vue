@@ -14,19 +14,30 @@
             <Link :href="route('gallery.index')" class="text-gray-600 hover:text-gray-900">
               Browse Gallery
             </Link>
-            <Link
-              :href="route('login')"
-              class="text-sm text-gray-700 underline"
-            >
-              Log in
-            </Link>
-            <Link
-              v-if="$page.props.canRegister"
-              :href="route('register')"
-              class="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
-            >
-              Register
-            </Link>
+            <template v-if="$page.props.auth?.user">
+              <Link :href="route('dashboard')" class="text-gray-600 hover:text-gray-900">
+                Dashboard
+              </Link>
+              <Link v-if="$page.props.auth.user.roles?.some(r => r.slug === 'admin')" :href="route('admin.system.index')" class="text-gray-600 hover:text-gray-900">
+                Admin
+              </Link>
+            </template>
+            <template v-else>
+              <Link
+                v-if="$page.props.can?.login"
+                :href="route('login')"
+                class="text-sm text-gray-700 underline"
+              >
+                Log in
+              </Link>
+              <Link
+                v-if="$page.props.can?.register"
+                :href="route('register')"
+                class="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
+              >
+                Register
+              </Link>
+            </template>
           </div>
         </div>
       </div>

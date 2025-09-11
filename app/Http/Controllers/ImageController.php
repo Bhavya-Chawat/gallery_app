@@ -91,6 +91,11 @@ class ImageController extends Controller
             'albums' => Album::visible()->select('id', 'title', 'slug')->get(),
             'tags' => Tag::popular()->select('id', 'name', 'slug')->take(20)->get(),
             'canUpload' => auth()->check() && auth()->user()->can('create', Image::class),
+            'auth' => [
+                'user' => auth()->user(),
+                'roles' => auth()->user()?->roles ?? [],
+            ],
+            'errors' => session('errors') ?? [],
         ]);
     }
 
@@ -198,6 +203,11 @@ class ImageController extends Controller
                 'comment' => auth()->check() && $image->allow_comments && auth()->user()->can('create', \App\Models\Comment::class),
                 'like' => auth()->check(),
             ],
+            'auth' => [
+                'user' => auth()->user(),
+                'roles' => auth()->user()?->roles ?? [],
+            ],
+            'errors' => session('errors') ?? [],
         ]);
     }
 

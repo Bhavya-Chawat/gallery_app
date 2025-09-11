@@ -29,10 +29,27 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+        if ($user) {
+            $user->loadMissing('roles');
+        }
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $user ? [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'roles' => $user->roles?->pluck('slug') ?? [],
+                    'permissions' => $user->roles?->pluck('permissions')->flatten()->unique()->values() ?? [],
+                ] : null,
+            ],
+            'app' => [
+                'name' => config('app.name', 'Laravel Gallery'),
+            ],
+            'can' => [
+                'login' => \Illuminate\Support\Facades\Route::has('login'),
+                'register' => \Illuminate\Support\Facades\Route::has('register') && (bool) config('gallery.enable_registration', true),
             ],
         ];
     }

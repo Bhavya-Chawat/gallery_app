@@ -37,6 +37,11 @@ class DashboardController extends Controller
             $data = array_merge($data, $this->getVisitorDashboardData($user));
         }
 
+        $data['auth'] = [
+            'user' => $user,
+            'roles' => method_exists($user, 'roles') ? $user->roles : [],
+        ];
+        $data['errors'] = session('errors') ?? [];
         return Inertia::render('Dashboard', $data);
     }
 

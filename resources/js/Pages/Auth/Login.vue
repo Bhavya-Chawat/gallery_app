@@ -7,6 +7,7 @@ import InputLabel from '@/Components/InputLabel.vue';
 import InputError from '@/Components/InputError.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import Checkbox from '@/Components/Checkbox.vue';
+import route from 'ziggy-js';
 
 // Props expected by Breeze
 defineProps({

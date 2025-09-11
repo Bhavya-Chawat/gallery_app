@@ -71,7 +71,9 @@
     </div>
 
     <!-- Edit Modal -->
-    <Modal v-model="showEditModal" title="Bulk Edit Images">
+    <Modal :show="showEditModal" @close="showEditModal = false">
+      <template #default>
+      <div class="text-lg font-medium mb-4">Bulk Edit Images</div>
       <form @submit.prevent="handleBulkEdit">
         <div class="space-y-4">
           <div>
@@ -140,6 +142,7 @@
           </button>
         </div>
       </form>
+      </template>
     </Modal>
   </div>
 </template>

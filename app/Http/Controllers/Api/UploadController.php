@@ -9,6 +9,7 @@ use App\Models\Album;
 use App\Models\Image;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class UploadController extends Controller
@@ -27,7 +28,8 @@ class UploadController extends Controller
         $request->validate([
             'files' => 'required|array|min:1|max:20',
             'files.*.name' => 'required|string|max:255',
-            'files.*.size' => 'required|integer|min:1|max:' . (config('gallery.max_upload_size', 50) * 1024 * 1024),
+            // client-reported size in bytes; compare against configured byte limit
+            'files.*.size' => 'required|integer|min:1|max:' . (int) config('filesystems.gallery.max_upload_size', 52428800),
             'files.*.type' => 'required|string|in:image/jpeg,image/png,image/webp,image/avif',
             'album_id' => 'nullable|exists:albums,id',
             'privacy' => 'nullable|in:public,unlisted,private',
@@ -89,7 +91,7 @@ class UploadController extends Controller
         cache()->put("upload_session:{$uploadSessionId}", [
             'user_id' => $user->id,
             'album_id' => $request->album_id,
-            'privacy' => $request->privacy ?? config('gallery.default_privacy', 'unlisted'),
+            'privacy' => $request->privacy ?? config('filesystems.gallery.default_privacy', 'unlisted'),
             'files' => collect($uploads)->keyBy('file_id')->toArray(),
             'expires_at' => now()->addMinutes(20),
         ], now()->addMinutes(20));
@@ -194,7 +196,7 @@ class UploadController extends Controller
                 auth()->user()->incrementStorageUsage($actualSize);
 
                 // Queue processing job
-                ProcessImageJob::dispatch($image);
+              //  ProcessImageJob::dispatch($image);
 
                 $createdImages[] = [
                     'image_id' => $image->id,
@@ -253,9 +255,13 @@ class UploadController extends Controller
      */
     public function direct(Request $request)
     {
+        $maxBytes = (int) config('filesystems.gallery.max_upload_size', 52428800);
+        $maxKilobytes = (int) ceil($maxBytes / 1024);
+
         $request->validate([
             'files' => 'required|array|min:1|max:5',
-            'files.*' => 'required|image|max:' . (config('gallery.max_upload_size', 50) * 1024),
+            // Laravel's max for file size expects kilobytes
+            'files.*' => 'required|image|max:' . $maxKilobytes,
             'album_id' => 'nullable|exists:albums,id',
             'privacy' => 'nullable|in:public,unlisted,private',
             'title_prefix' => 'nullable|string|max:100',
@@ -266,61 +272,112 @@ class UploadController extends Controller
 
         $user = auth()->user();
         $createdImages = [];
+        $errors = [];
 
+        $disk = config('filesystems.default', 'local');
+        $disk = 'public';
         foreach ($request->file('files') as $file) {
-            // Check storage quota
-            if (!$user->canUpload($file->getSize())) {
+            try {
+                // Check storage quota
+                if (!$user->canUpload($file->getSize())) {
+                    $errors[] = [
+                        'filename' => $file->getClientOriginalName(),
+                        'error' => 'insufficient_storage',
+                        'message' => 'Insufficient storage quota for this file',
+                        'size' => $file->getSize(),
+                        'remaining_bytes' => $user->getRemainingStorageBytes(),
+                    ];
+                    continue;
+                }
+
+                $fileId = Str::uuid();
+                $extension = $file->getClientOriginalExtension();
+                $storageKey = $this->generateStorageKey($fileId, $extension);
+
+                // Upload file
+                $path = Storage::disk($disk)->putFileAs(
+                    dirname($storageKey),
+                    $file,
+                    basename($storageKey)
+                );
+
+                if (!$path) {
+                    throw new \RuntimeException('putFileAs returned empty path');
+                }
+
+                // Create image record
+                $image = Image::create([
+                    'id' => $fileId,
+                    'owner_id' => $user->id,
+                    'album_id' => $request->album_id,
+                    'title' => $this->generateTitle($file->getClientOriginalName(), $request->title_prefix),
+                    'caption' => $request->caption,
+                    'alt_text' => $this->generateAltText($file->getClientOriginalName()),
+                    'original_filename' => $file->getClientOriginalName(),
+                    'storage_path' => $path,
+                    'mime_type' => $file->getMimeType(),
+                    'size_bytes' => $file->getSize(),
+                    'width' => 0,
+                    'height' => 0,
+                    'privacy' => $request->privacy ?? config('filesystems.gallery.default_privacy', 'unlisted'),
+                    'license' => $request->license,
+                    'is_published' => ($request->privacy ?? 'unlisted') !== 'private',
+                    'published_at' => ($request->privacy ?? 'unlisted') !== 'private' ? now() : null,
+                    'aspect_ratio' => 0,
+                    'processing_status' => [
+                        'thumbnails_generated' => false,
+                        'metadata_extracted' => false,
+                    ],
+                ]);
+
+                // Update user storage usage
+                $user->incrementStorageUsage($file->getSize());
+
+                // Queue processing
+                ProcessImageJob::dispatch($image);
+
+               $createdImages[] = [
+    'id' => $image->id,
+    'title' => $image->title,
+    'original_filename' => $image->original_filename,
+    'storage_path' => $image->storage_path,
+    'size_bytes' => $image->size_bytes,
+    'mime_type' => $image->mime_type,
+    'created_at' => $image->created_at,
+];
+
+
+            } catch (\Throwable $t) {
+                Log::error('Direct upload failed', [
+                    'user_id' => $user->id,
+                    'disk' => $disk,
+                    'album_id' => $request->album_id,
+                    'filename' => $file->getClientOriginalName(),
+                    'mime' => $file->getMimeType(),
+                    'size' => $file->getSize(),
+                    'storage_key' => isset($storageKey) ? $storageKey : null,
+                    'exception' => get_class($t),
+                    'message' => $t->getMessage(),
+                    'trace' => $t->getTraceAsString(),
+                ]);
+
+                $errors[] = [
+                    'filename' => $file->getClientOriginalName(),
+                    'error' => 'upload_failed',
+                    'message' => $t->getMessage(),
+                ];
                 continue;
             }
-
-            $fileId = Str::uuid();
-            $extension = $file->getClientOriginalExtension();
-            $storageKey = $this->generateStorageKey($fileId, $extension);
-
-            // Upload file
-            $path = Storage::disk('s3')->putFileAs(
-                dirname($storageKey),
-                $file,
-                basename($storageKey)
-            );
-
-            // Create image record
-            $image = Image::create([
-                'id' => $fileId,
-                'owner_id' => $user->id,
-                'album_id' => $request->album_id,
-                'title' => $this->generateTitle($file->getClientOriginalName(), $request->title_prefix),
-                'caption' => $request->caption,
-                'alt_text' => $this->generateAltText($file->getClientOriginalName()),
-                'original_filename' => $file->getClientOriginalName(),
-                'storage_path' => $path,
-                'mime_type' => $file->getMimeType(),
-                'size_bytes' => $file->getSize(),
-                'width' => 0,
-                'height' => 0,
-                'privacy' => $request->privacy ?? config('gallery.default_privacy', 'unlisted'),
-                'license' => $request->license,
-                'is_published' => ($request->privacy ?? 'unlisted') !== 'private',
-                'published_at' => ($request->privacy ?? 'unlisted') !== 'private' ? now() : null,
-                'processing_status' => [
-                    'thumbnails_generated' => false,
-                    'metadata_extracted' => false,
-                ],
-            ]);
-
-            // Update user storage usage
-            $user->incrementStorageUsage($file->getSize());
-
-            // Queue processing
-            ProcessImageJob::dispatch($image);
-
-            $createdImages[] = new ImageResource($image);
         }
+
+        $status = empty($errors) ? 201 : (empty($createdImages) ? 422 : 207);
 
         return response()->json([
             'message' => count($createdImages) . ' images uploaded successfully',
             'images' => $createdImages,
-        ], 201);
+            'errors' => $errors,
+            'disk' => $disk,
+        ], $status);
     }
 
     // Helper methods

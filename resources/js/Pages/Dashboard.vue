@@ -266,30 +266,17 @@ import StatCard from '@/Components/StatCard.vue'
 const page = usePage()
 
 const props = defineProps({
-  user: Object,
-  storageUsed: Number,
-  storageQuota: Number,
-  storageUsagePercentage: Number,
-  stats: {
-    type: Object,
-    default: () => ({}),
-  },
-  recentImages: {
-    type: Array,
-    default: () => [],
-  },
-  recentAlbums: {
-    type: Array,
-    default: () => [],
-  },
-  recentActivities: {
-    type: Array,
-    default: () => [],
-  },
-  systemStatus: {
-    type: Object,
-    default: () => ({}),
-  },
+  user: { type: Object, default: () => ({}) },
+  storageUsed: { type: Number, default: 0 },
+  storageQuota: { type: Number, default: 0 },
+  storageUsagePercentage: { type: Number, default: 0 },
+  stats: { type: Object, default: () => ({}) },
+  recentImages: { type: Array, default: () => [] },
+  recentAlbums: { type: Array, default: () => [] },
+  recentActivities: { type: Array, default: () => [] },
+  systemStatus: { type: Object, default: () => ({}) },
+  auth: { type: Object, default: () => ({ user: null, roles: [] }) },
+  errors: { type: Object, default: () => ({}) },
 })
 
 const canUpload = computed(() => {
