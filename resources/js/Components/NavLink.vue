@@ -1,26 +1,43 @@
+<template>
+  <Link
+    :href="href"
+    :class="classes"
+    v-bind="$attrs"
+  >
+    <slot />
+  </Link>
+</template>
+
 <script setup>
-import { computed } from 'vue';
-import { Link } from '@inertiajs/vue3';
+import { computed } from 'vue'
+import { Link } from '@inertiajs/vue3'
 
 const props = defineProps({
-    href: {
-        type: String,
-        required: true,
-    },
-    active: {
-        type: Boolean,
-    },
-});
+  href: {
+    type: String,
+    required: true
+  },
+  active: {
+    type: Boolean,
+    default: false
+  }
+})
 
-const classes = computed(() =>
-    props.active
-        ? 'inline-flex items-center px-1 pt-1 border-b-2 border-indigo-400 text-sm font-medium leading-5 text-gray-900 focus:outline-none focus:border-indigo-700 transition duration-150 ease-in-out'
-        : 'inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none focus:text-gray-700 focus:border-gray-300 transition duration-150 ease-in-out',
-);
+const classes = computed(() => {
+  const baseClasses = [
+    'inline-flex items-center px-4 py-2 text-sm font-medium leading-5 transition duration-150 ease-in-out focus:outline-none rounded-lg'
+  ]
+
+  if (props.active) {
+    return [
+      ...baseClasses,
+      'bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-400 text-white shadow-md'
+    ].join(' ')
+  }
+
+  return [
+    ...baseClasses,
+    'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700/50 focus:text-gray-700 dark:focus:text-gray-200 focus:bg-gray-100 dark:focus:bg-slate-700/50'
+  ].join(' ')
+})
 </script>
-
-<template>
-    <Link :href="href" :class="classes">
-        <slot />
-    </Link>
-</template>

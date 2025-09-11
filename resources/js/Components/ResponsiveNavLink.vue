@@ -1,26 +1,66 @@
+<template>
+  <component
+    :is="component"
+    :href="href"
+    :method="method"
+    :as="as"
+    :class="classes"
+    v-bind="$attrs"
+  >
+    <slot />
+  </component>
+</template>
+
 <script setup>
-import { computed } from 'vue';
-import { Link } from '@inertiajs/vue3';
+import { computed } from 'vue'
+import { Link } from '@inertiajs/vue3'
 
 const props = defineProps({
-    href: {
-        type: String,
-        required: true,
-    },
-    active: {
-        type: Boolean,
-    },
-});
+  href: {
+    type: String,
+    default: null
+  },
+  method: {
+    type: String,
+    default: 'get'
+  },
+  as: {
+    type: String,
+    default: null
+  },
+  active: {
+    type: Boolean,
+    default: false
+  }
+})
 
-const classes = computed(() =>
-    props.active
-        ? 'block w-full ps-3 pe-4 py-2 border-l-4 border-indigo-400 text-start text-base font-medium text-indigo-700 bg-indigo-50 focus:outline-none focus:text-indigo-800 focus:bg-indigo-100 focus:border-indigo-700 transition duration-150 ease-in-out'
-        : 'block w-full ps-3 pe-4 py-2 border-l-4 border-transparent text-start text-base font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:text-gray-800 focus:bg-gray-50 focus:border-gray-300 transition duration-150 ease-in-out',
-);
+const component = computed(() => {
+  if (props.as) {
+    return props.as
+  }
+  
+  if (props.href) {
+    return Link
+  }
+  
+  return 'button'
+})
+
+const classes = computed(() => {
+  const baseClasses = [
+    'block w-full pl-3 pr-4 py-2 text-left text-base font-medium transition duration-150 ease-in-out focus:outline-none rounded-lg mx-3 my-1'
+  ]
+
+  if (props.active) {
+    return [
+      ...baseClasses,
+      'bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-400 text-white shadow-md'
+    ].join(' ')
+  }
+
+  return [
+    ...baseClasses,
+    'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700/50 focus:text-gray-800 dark:focus:text-gray-200 focus:bg-gray-100 dark:focus:bg-slate-700/50'
+  ].join(' ')
+})
 </script>
-
-<template>
-    <Link :href="href" :class="classes">
-        <slot />
-    </Link>
-</template>
