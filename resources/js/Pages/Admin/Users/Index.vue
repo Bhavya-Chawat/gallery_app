@@ -9,207 +9,169 @@
             User Management
           </h2>
           <p class="text-sm text-gray-600 mt-1">
-            Manage user accounts and permissions
+            Manage users, roles, and permissions
           </p>
         </div>
-        <div class="flex items-center space-x-3">
-          <Link
-            :href="route('admin.users.create')"
-            class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700"
-          >
-            <PlusIcon class="h-4 w-4 mr-2" />
-            Create User
-          </Link>
-        </div>
+        <Link
+          :href="route('admin.users.create')"
+          class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700"
+        >
+          <PlusIcon class="h-4 w-4 mr-2" />
+          Create User
+        </Link>
       </div>
     </template>
 
-    <div class="py-6">
-      <div class="space-y-6">
-        <!-- Filters -->
-        <div class="bg-white shadow rounded-lg">
-          <div class="p-6">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Search</label>
-                <input
-                  v-model="searchForm.search"
-                  @input="debounceSearch"
-                  type="text"
-                  placeholder="Search users..."
-                  class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Role</label>
-                <select
-                  v-model="searchForm.role"
-                  @change="search"
-                  class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">All Roles</option>
-                  <option
-                    v-for="role in roles"
-                    :key="role.id"
-                    :value="role.slug"
-                  >
-                    {{ role.name }}
-                  </option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Status</label>
-                <select
-                  v-model="searchForm.status"
-                  @change="search"
-                  class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">All Users</option>
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                </select>
-              </div>
-              <div class="flex items-end">
-                <button
-                  @click="resetFilters"
-                  class="w-full px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-                >
-                  Reset
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Users Table -->
-        <div class="bg-white shadow rounded-lg overflow-hidden">
-          <div class="px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-medium text-gray-900">
-              Users ({{ users.meta?.total || 0 }})
-            </h3>
+    <div class="space-y-6">
+      <!-- Filters -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Search</label>
+            <input
+              v-model="searchForm.search"
+              @keyup.enter="search"
+              type="text"
+              placeholder="Search users..."
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            />
           </div>
           
-          <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-              <thead class="bg-gray-50">
-                <tr>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    User
-                  </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Role
-                  </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Storage
-                  </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Last Login
-                  </th>
-                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody class="bg-white divide-y divide-gray-200">
-                <tr
-                  v-for="user in users.data"
-                  :key="user.id"
-                  class="hover:bg-gray-50"
-                >
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="flex items-center">
-                      <UserAvatar :user="user" size="sm" />
-                      <div class="ml-4">
-                        <div class="text-sm font-medium text-gray-900">
-                          {{ user.name }}
-                        </div>
-                        <div class="text-sm text-gray-500">
-                          {{ user.email }}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <span
-                      v-for="role in user.roles"
-                      :key="role.id"
-                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mr-1"
-                    >
-                      {{ role.name }}
-                    </span>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <span
-                      :class="[
-                        'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                        user.is_active
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                      ]"
-                    >
-                      {{ user.is_active ? 'Active' : 'Inactive' }}
-                    </span>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    <div class="flex items-center">
-                      <div class="flex-1">
-                        <div class="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            class="bg-blue-600 h-2 rounded-full"
-                            :style="{ width: `${user.storage_percentage}%` }"
-                          ></div>
-                        </div>
-                      </div>
-                      <div class="ml-2 text-xs text-gray-500">
-                        {{ formatBytes(user.storage_used) }}
-                      </div>
-                    </div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {{ user.last_login_at ? formatDate(user.last_login_at) : 'Never' }}
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div class="flex items-center justify-end space-x-2">
-                      <Link
-                        :href="route('admin.users.show', user.id)"
-                        class="text-blue-600 hover:text-blue-900"
-                      >
-                        View
-                      </Link>
-                      <Link
-                        :href="route('admin.users.edit', user.id)"
-                        class="text-blue-600 hover:text-blue-900"
-                      >
-                        Edit
-                      </Link>
-                      <button
-                        @click="toggleUserStatus(user)"
-                        :class="[
-                          'text-sm',
-                          user.is_active
-                            ? 'text-red-600 hover:text-red-900'
-                            : 'text-green-600 hover:text-green-900'
-                        ]"
-                      >
-                        {{ user.is_active ? 'Deactivate' : 'Activate' }}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
+            <select
+              v-model="searchForm.role"
+              @change="search"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">All Roles</option>
+              <option v-for="role in roles" :key="role.id" :value="role.slug">
+                {{ role.name }}
+              </option>
+            </select>
           </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+            <select
+              v-model="searchForm.status"
+              @change="search"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">All Statuses</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+          
+          <div class="flex items-end">
+            <button
+              @click="clearFilters"
+              class="w-full px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+            >
+              Clear Filters
+            </button>
+          </div>
+        </div>
+      </div>
 
-          <!-- Pagination -->
-          <Pagination
-            v-if="users.data.length > 0"
-            :links="users.links"
-            :meta="users.meta"
-            class="px-6 py-4 border-t border-gray-200"
-          />
+      <!-- Users Table -->
+      <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  User
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Role
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Storage
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Joined
+                </th>
+                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr v-for="user in users.data" :key="user.id" class="hover:bg-gray-50">
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="flex items-center">
+                    <UserAvatar :user="user" size="sm" />
+                    <div class="ml-4">
+                      <div class="text-sm font-medium text-gray-900">{{ user.name }}</div>
+                      <div class="text-sm text-gray-500">{{ user.email }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span 
+                    v-for="role in user.roles" 
+                    :key="role.id"
+                    :class="getRoleBadgeClass(role.slug)"
+                    class="inline-flex px-2 py-1 text-xs font-semibold rounded-full mr-1"
+                  >
+                    {{ role.name }}
+                  </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span :class="user.is_active ? 'text-green-800 bg-green-100' : 'text-red-800 bg-red-100'" 
+                        class="inline-flex px-2 py-1 text-xs font-semibold rounded-full">
+                    {{ user.is_active ? 'Active' : 'Inactive' }}
+                  </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      class="bg-blue-600 h-2 rounded-full" 
+                      :style="{ width: user.storage_percentage + '%' }"
+                    ></div>
+                  </div>
+                  <div class="text-xs text-gray-500 mt-1">
+                    {{ formatBytes(user.storage_used) }} / {{ formatBytes(user.storage_quota) }}
+                  </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {{ formatDate(user.created_at) }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <div class="flex justify-end space-x-2">
+                    <Link
+                      :href="route('admin.users.show', user.id)"
+                      class="text-blue-600 hover:text-blue-500"
+                    >
+                      View
+                    </Link>
+                    <Link
+                      :href="route('admin.users.edit', user.id)"
+                      class="text-indigo-600 hover:text-indigo-500"
+                    >
+                      Edit
+                    </Link>
+                    <button
+                      @click="toggleUserStatus(user)"
+                      :class="user.is_active ? 'text-red-600 hover:text-red-500' : 'text-green-600 hover:text-green-500'"
+                    >
+                      {{ user.is_active ? 'Disable' : 'Enable' }}
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- Pagination -->
+        <div v-if="users.links" class="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
+          <Pagination :links="users.links" />
         </div>
       </div>
     </div>
@@ -229,10 +191,7 @@ import Pagination from '@/Components/Pagination.vue'
 const props = defineProps({
   users: Object,
   roles: Array,
-  filters: {
-    type: Object,
-    default: () => ({}),
-  },
+  filters: Object,
 })
 
 const searchForm = reactive({
@@ -241,34 +200,31 @@ const searchForm = reactive({
   status: props.filters.status || '',
 })
 
-let searchTimeout = null
-
-const debounceSearch = () => {
-  clearTimeout(searchTimeout)
-  searchTimeout = setTimeout(() => {
-    search()
-  }, 300)
-}
-
 const search = () => {
-  router.get(route('admin.users.index'), searchForm, {
+  const params = Object.fromEntries(
+    Object.entries(searchForm).filter(([_, value]) => value !== '')
+  )
+  
+  router.get(route('admin.users.index'), params, {
     preserveState: true,
     replace: true,
   })
 }
 
-const resetFilters = () => {
+const clearFilters = () => {
   Object.keys(searchForm).forEach(key => {
     searchForm[key] = ''
   })
   search()
 }
 
-const toggleUserStatus = (user) => {
-  const action = user.is_active ? 'deactivate' : 'activate'
-  if (confirm(`Are you sure you want to ${action} ${user.name}?`)) {
-    router.post(route('admin.users.toggle-active', user.id))
+const getRoleBadgeClass = (roleSlug) => {
+  const classes = {
+    admin: 'text-red-800 bg-red-100',
+    editor: 'text-blue-800 bg-blue-100',
+    user: 'text-gray-800 bg-gray-100',
   }
+  return classes[roleSlug] || classes.user
 }
 
 const formatBytes = (bytes) => {
@@ -281,5 +237,12 @@ const formatBytes = (bytes) => {
 
 const formatDate = (date) => {
   return new Date(date).toLocaleDateString()
+}
+
+const toggleUserStatus = (user) => {
+  const action = user.is_active ? 'disable' : 'enable'
+  if (confirm(`Are you sure you want to ${action} this user?`)) {
+    router.post(route('admin.users.toggle-active', user.id))
+  }
 }
 </script>

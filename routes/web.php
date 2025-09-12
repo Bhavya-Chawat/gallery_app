@@ -234,26 +234,40 @@ Route::patch('/profile/privacy', [ProfileController::class, 'updatePrivacy'])->n
     })->name('request-editor-access');
 });
 
-// Admin Routes
-Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::resource('users', UserController::class);
-    Route::post('/users/{user}/assign-role', [UserController::class, 'assignRole'])->name('users.assign-role');
-    Route::post('/users/{user}/toggle-active', [UserController::class, 'toggleActive'])->name('users.toggle-active');
-    Route::post('/users/{user}/reset-storage', [UserController::class, 'resetStorage'])->name('users.reset-storage');
+// Admin Routes - Complete version
+Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
+    
+    // System Routes
+    Route::get('/', [App\Http\Controllers\Admin\SystemController::class, 'index'])->name('system.index');
+    Route::get('/analytics', [App\Http\Controllers\Admin\SystemController::class, 'analytics'])->name('system.analytics');
+    Route::get('/settings', [App\Http\Controllers\Admin\SystemController::class, 'settings'])->name('system.settings');
+    Route::post('/settings', [App\Http\Controllers\Admin\SystemController::class, 'updateSettings'])->name('system.update-settings');
+    Route::post('/clear-cache', [App\Http\Controllers\Admin\SystemController::class, 'clearCache'])->name('system.clear-cache');
 
-    Route::get('/system', [SystemController::class, 'index'])->name('system.index');
-    Route::get('/system/analytics', [SystemController::class, 'analytics'])->name('system.analytics');
-    Route::get('/system/settings', [SystemController::class, 'settings'])->name('system.settings');
-    Route::post('/system/settings', [SystemController::class, 'updateSettings'])->name('system.update-settings');
-    Route::post('/system/clear-cache', [SystemController::class, 'clearCache'])->name('system.clear-cache');
-    Route::post('/system/maintenance', [SystemController::class, 'maintenance'])->name('system.maintenance');
-    Route::get('/system/export/{type}', [SystemController::class, 'export'])->name('system.export');
+    // User Management Routes
+    Route::resource('users', App\Http\Controllers\Admin\UserController::class);
+    Route::post('/users/{user}/assign-role', [App\Http\Controllers\Admin\UserController::class, 'assignRole'])->name('users.assign-role');
+    Route::post('/users/{user}/toggle-active', [App\Http\Controllers\Admin\UserController::class, 'toggleActive'])->name('users.toggle-active');
+    Route::post('/users/{user}/reset-storage', [App\Http\Controllers\Admin\UserController::class, 'resetStorage'])->name('users.reset-storage');
 
-    Route::get('/moderation', [ModerationController::class, 'index'])->name('moderation.index');
-    Route::get('/moderation/comments', [ModerationController::class, 'comments'])->name('moderation.comments');
-    Route::get('/moderation/reports', [ModerationController::class, 'reports'])->name('moderation.reports');
-    Route::post('/comments/{comment}/approve', [ModerationController::class, 'approveComment'])->name('comments.approve');
-    Route::post('/comments/{comment}/reject', [ModerationController::class, 'rejectComment'])->name('comments.reject');
-    Route::post('/comments/{comment}/spam', [ModerationController::class, 'markSpam'])->name('comments.spam');
-    Route::post('/comments/bulk-moderate', [ModerationController::class, 'bulkModerate'])->name('comments.bulk-moderate');
+    // Moderation Routes
+    Route::get('/moderation', [App\Http\Controllers\Admin\ModerationController::class, 'index'])->name('moderation.index');
+    Route::get('/moderation/comments', [App\Http\Controllers\Admin\ModerationController::class, 'comments'])->name('moderation.comments');
+    
+    // Comment Moderation Actions
+    Route::post('/comments/{comment}/approve', [App\Http\Controllers\Admin\ModerationController::class, 'approveComment'])->name('moderation.approve-comment');
+    Route::post('/comments/{comment}/reject', [App\Http\Controllers\Admin\ModerationController::class, 'rejectComment'])->name('moderation.reject-comment');
+    Route::post('/comments/{comment}/spam', [App\Http\Controllers\Admin\ModerationController::class, 'markSpam'])->name('moderation.mark-spam');
+    Route::post('/comments/bulk-moderate', [App\Http\Controllers\Admin\ModerationController::class, 'bulkModerate'])->name('moderation.bulk-moderate');
+    
+    // Image/Album Moderation Actions
+    Route::post('/images/{image}/approve', [App\Http\Controllers\Admin\ModerationController::class, 'approveImage'])->name('moderation.approve-image');
+    Route::post('/images/{image}/reject', [App\Http\Controllers\Admin\ModerationController::class, 'rejectImage'])->name('moderation.reject-image');
+    Route::post('/albums/{album}/approve', [App\Http\Controllers\Admin\ModerationController::class, 'approveAlbum'])->name('moderation.approve-album');
+    Route::post('/albums/{album}/reject', [App\Http\Controllers\Admin\ModerationController::class, 'rejectAlbum'])->name('moderation.reject-album');
+    // Additional user management routes
+    Route::post('/users/bulk-action', [App\Http\Controllers\Admin\UserController::class, 'bulkAction'])->name('users.bulk-action');
+    Route::get('/users/export', [App\Http\Controllers\Admin\UserController::class, 'export'])->name('users.export');
+    Route::get('/users/stats', [App\Http\Controllers\Admin\UserController::class, 'getStats'])->name('users.stats');
+
 });

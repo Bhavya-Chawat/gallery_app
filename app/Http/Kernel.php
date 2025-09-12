@@ -59,4 +59,11 @@ class Kernel extends HttpKernel
         'role' => \App\Http\Middleware\EnsureUserHasRole::class,
         'permission' => \App\Http\Middleware\EnsureUserHasPermission::class,
     ];
+    
+    protected $middlewareAliases = [
+    // ... other middleware
+    'role' => \Spatie\Permission\Middlewares\RoleMiddleware::class,
+    'permission' => \Spatie\Permission\Middlewares\PermissionMiddleware::class,
+    'role_or_permission' => \Spatie\Permission\Middlewares\RoleOrPermissionMiddleware::class,
+];
 }
