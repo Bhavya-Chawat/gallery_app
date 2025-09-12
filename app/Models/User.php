@@ -89,10 +89,19 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     // Role and Permission Methods
-    public function hasRole(string $role): bool
-    {
+// In your User model, update the hasRole method:
+public function hasRole($role): bool
+{
+    if (is_string($role)) {
         return $this->roles()->where('slug', $role)->exists();
     }
+    
+    if (is_array($role)) {
+        return $this->roles()->whereIn('slug', $role)->exists();
+    }
+    
+    return false;
+}
 
     public function hasAnyRole(array $roles): bool
     {

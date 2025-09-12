@@ -8,24 +8,22 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('collection_items', function (Blueprint $table) {
+        Schema::create('collection_image', function (Blueprint $table) {
             $table->id();
-            $table->foreignUuid('collection_id')->constrained()->onDelete('cascade');
-            $table->string('collectable_type'); // Album or Image
-            $table->uuid('collectable_id');
-            $table->integer('sort_order')->default(0);
-            $table->text('description')->nullable(); // Optional item-specific description
+            $table->uuid('collection_id');
+            $table->uuid('image_id');
             $table->timestamp('added_at')->useCurrent();
+            $table->unsignedInteger('position')->default(0);
             $table->timestamps();
-
-            $table->index(['collection_id', 'sort_order']);
-            $table->index(['collectable_type', 'collectable_id']);
-            $table->unique(['collection_id', 'collectable_type', 'collectable_id']);
+            
+            $table->foreign('collection_id')->references('id')->on('collections')->onDelete('cascade');
+            $table->foreign('image_id')->references('id')->on('images')->onDelete('cascade');
+            $table->unique(['collection_id', 'image_id']);
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('collection_items');
+        Schema::dropIfExists('collection_image');
     }
 };

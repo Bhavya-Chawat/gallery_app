@@ -6,8 +6,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
@@ -22,14 +21,14 @@ class Collection extends Model
         'description',
         'privacy',
         'cover_image_id',
-        'items_count',
+        'images_count',
         'is_published',
         'published_at',
         'metadata',
     ];
 
     protected $casts = [
-        'items_count' => 'integer',
+        'images_count' => 'integer',
         'is_published' => 'boolean',
         'published_at' => 'datetime',
         'metadata' => 'array',
@@ -41,9 +40,12 @@ class Collection extends Model
         return $this->belongsTo(User::class, 'curator_id');
     }
 
-    public function items(): HasMany
+    public function images(): BelongsToMany
     {
-        return $this->hasMany(CollectionItem::class)->orderBy('sort_order');
+        return $this->belongsToMany(Image::class, 'collection_image')
+            ->withPivot(['added_at', 'position'])
+            ->withTimestamps()
+            ->orderBy('pivot_added_at', 'desc');
     }
 
     public function coverImage(): BelongsTo
@@ -51,17 +53,7 @@ class Collection extends Model
         return $this->belongsTo(Image::class, 'cover_image_id');
     }
 
-    public function viewCounts(): MorphMany
-    {
-        return $this->morphMany(ViewCount::class, 'viewable');
-    }
-
-    public function auditLogs(): MorphMany
-    {
-        return $this->morphMany(AuditLog::class, 'auditable');
-    }
-
-    // Boot method
+    // Boot method for auto-generating slug
     protected static function boot()
     {
         parent::boot();
@@ -79,6 +71,30 @@ class Collection extends Model
                 }
             }
         });
+
+        static::updating(function ($collection) {
+            if ($collection->isDirty('title') && empty($collection->getOriginal('slug'))) {
+                $collection->slug = Str::slug($collection->title);
+            }
+        });
+    }
+
+    // Scopes
+    public function scopePublic($query)
+    {
+        return $query->where('privacy', 'public')
+                    ->where('is_published', true);
+    }
+
+    public function scopeVisible($query)
+    {
+        return $query->whereIn('privacy', ['public', 'unlisted'])
+                    ->where('is_published', true);
+    }
+
+    public function scopeByOwner($query, int $ownerId)
+    {
+        return $query->where('curator_id', $ownerId);
     }
 
     // Methods
@@ -108,71 +124,9 @@ class Collection extends Model
         ]);
     }
 
-    public function addItem(Model $item, string $description = null, int $sortOrder = null): CollectionItem
+    public function updateImageCount(): void
     {
-        if ($sortOrder === null) {
-            $sortOrder = $this->items()->max('sort_order') + 1 ?? 0;
-        }
-
-        $collectionItem = $this->items()->create([
-            'collectable_type' => get_class($item),
-            'collectable_id' => $item->id,
-            'description' => $description,
-            'sort_order' => $sortOrder,
-        ]);
-
-        $this->updateItemsCount();
-        
-        return $collectionItem;
-    }
-
-    public function removeItem(Model $item): bool
-    {
-        $removed = $this->items()
-            ->where('collectable_type', get_class($item))
-            ->where('collectable_id', $item->id)
-            ->delete();
-
-        if ($removed) {
-            $this->updateItemsCount();
-            return true;
-        }
-
-        return false;
-    }
-
-    public function reorderItems(array $itemIds): void
-    {
-        foreach ($itemIds as $index => $itemId) {
-            $this->items()->where('id', $itemId)->update(['sort_order' => $index]);
-        }
-    }
-
-    private function updateItemsCount(): void
-    {
-        $this->update(['items_count' => $this->items()->count()]);
-    }
-
-    // Scopes
-    public function scopePublic($query)
-    {
-        return $query->where('privacy', 'public')
-                    ->where('is_published', true);
-    }
-
-    public function scopeVisible($query)
-    {
-        return $query->whereIn('privacy', ['public', 'unlisted'])
-                    ->where('is_published', true);
-    }
-
-    public function scopeByCurator($query, int $curatorId)
-    {
-        return $query->where('curator_id', $curatorId);
-    }
-
-    public function scopePublished($query)
-    {
-        return $query->where('is_published', true);
+        $count = $this->images()->count();
+        $this->update(['images_count' => $count]);
     }
 }
