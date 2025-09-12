@@ -15,40 +15,47 @@ class User extends Authenticatable implements MustVerifyEmail
     use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
-        'name',
-        'email',
-        'password',
-        'avatar_path',
-        'storage_used_bytes',
-        'storage_quota_bytes',
-        'preferences',
-        'timezone',
-        'last_login_at',
-        'is_active',
-        'email_notifications',
-    ];
+    'name',
+    'email',
+    'password',
+    'avatar_path',
+    'bio',
+    'website',
+    'social_links',
+    'profile_visibility',
+    'show_email_publicly',
+    'show_stats_publicly',
+    'storage_used_bytes',
+    'storage_quota_bytes',
+    'preferences',
+    'last_login_at',
+    'is_active',
+    'email_notifications',
+];
 
     protected $hidden = [
         'password',
         'remember_token',
     ];
-
-    protected $casts = [
-        'email_verified_at' => 'datetime',
-        'password' => 'hashed',
-        'preferences' => 'array',
-        'last_login_at' => 'datetime',
-        'is_active' => 'boolean',
-        'email_notifications' => 'boolean',
-        'storage_used_bytes' => 'integer',
-        'storage_quota_bytes' => 'integer',
-    ];
-
+protected $casts = [
+    'email_verified_at' => 'datetime',
+    'password' => 'hashed',
+    'preferences' => 'array',
+    'social_links' => 'array',
+    'last_login_at' => 'datetime',
+    'is_active' => 'boolean',
+    'email_notifications' => 'boolean',
+    'show_email_publicly' => 'boolean',
+    'show_stats_publicly' => 'boolean',
+    'storage_used_bytes' => 'integer',
+    'storage_quota_bytes' => 'integer',
+];
     // Relationships
     public function roles(): BelongsToMany
     {
         return $this->belongsToMany(Role::class)->withTimestamps();
     }
+
 
     public function albums(): HasMany
     {
@@ -144,10 +151,10 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     // Utility Methods
-    public function getAvatarUrl(): ?string
-    {
-        return $this->avatar_path ? asset('storage/' . $this->avatar_path) : null;
-    }
+public function getAvatarUrl(): ?string
+{
+    return $this->avatar_path ? "http://localhost:9000/gallery-images/{$this->avatar_path}" : null;
+}
 
     public function updateLastLogin(): void
     {

@@ -155,6 +155,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    // Profile routes (add these in the authenticated middleware group)
+Route::get('/profile/{user}', [ProfileController::class, 'show'])->name('profile.show');
+Route::post('/profile/avatar', [ProfileController::class, 'uploadAvatar'])->name('profile.avatar');
+Route::patch('/profile/privacy', [ProfileController::class, 'updatePrivacy'])->name('profile.privacy');
+
 
     // FIXED: My Content Routes - COMPLETELY SEPARATE FROM PUBLIC ROUTES
     Route::prefix('my')->name('my.')->group(function () {
