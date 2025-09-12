@@ -392,7 +392,7 @@ class ImageController extends Controller
     {
         $this->authorize('view', $image);
 
-        $image->load(['owner', 'album', 'tags', 'collections' => function($query) {
+        $image->load(['owner', 'album', 'tags' => function($query) {
             $query->with('curator');
         }]);
 

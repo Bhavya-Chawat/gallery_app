@@ -42,7 +42,7 @@ class Collection extends Model
 
     public function images(): BelongsToMany
     {
-        return $this->belongsToMany(Image::class, 'collection_image')
+        return $this->belongsToMany(Image::class, 'collection_image') // Use collection_image table
             ->withPivot(['added_at', 'position'])
             ->withTimestamps()
             ->orderBy('pivot_added_at', 'desc');
@@ -78,7 +78,10 @@ class Collection extends Model
             }
         });
     }
-
+public function getRouteKeyName()
+{
+    return 'slug';
+}
     // Scopes
     public function scopePublic($query)
     {

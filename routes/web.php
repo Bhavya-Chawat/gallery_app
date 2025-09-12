@@ -151,7 +151,7 @@ Route::get('/search', function (Request $request) {
 // Public viewing routes
 Route::get('/images/{image}/download', [ImageController::class, 'download'])->name('images.download');
 Route::get('/images/{image:slug}', [ImageController::class, 'show'])->name('images.show');
-Route::get('/collections/{collection}', [CollectionController::class, 'show'])->name('collections.show');
+Route::get('/collections/{collection:slug}', [CollectionController::class, 'show'])->name('collections.show');
 Route::get('/albums/{album:slug}', [AlbumController::class, 'show'])->name('albums.show');
 
 // Comment routes
@@ -210,10 +210,10 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/albums/{album}/remove-images', [AlbumController::class, 'removeImages'])->name('albums.remove-images');
 
     // Collection Management (authenticated features)
-    Route::get('/collections/{collection}/edit', [CollectionController::class, 'edit'])->name('collections.edit');
-    Route::patch('/collections/{collection}', [CollectionController::class, 'update'])->name('collections.update');
-    Route::delete('/collections/{collection}', [CollectionController::class, 'destroy'])->name('collections.destroy');
-    Route::post('/collections/{collection}/add-image', [CollectionController::class, 'addImage'])->name('collections.add-image');
+    Route::get('/collections/{collection:slug}/edit', [CollectionController::class, 'edit'])->name('collections.edit');
+    Route::patch('/collections/{collection:slug}', [CollectionController::class, 'update'])->name('collections.update');
+    Route::delete('/collections/{collection:slug}', [CollectionController::class, 'destroy'])->name('collections.destroy');
+    Route::post('/collections/{collection:slug}/add-image', [CollectionController::class, 'addImage'])->name('collections.add-image');
     Route::delete('/collections/{collection}/remove-image', [CollectionController::class, 'removeImage'])->name('collections.remove-image');
     Route::post('/collections/{collection}/toggle-publish', [CollectionController::class, 'togglePublish'])->name('collections.toggle-publish');
 

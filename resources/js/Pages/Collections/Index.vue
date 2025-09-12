@@ -15,7 +15,7 @@
         <div class="flex items-center space-x-4">
           <Link
             v-if="canCreate"
-            :href="route('collections.create')"
+            href="/collections/create"
             class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700"
           >
             <PlusIcon class="h-4 w-4 mr-2" />
@@ -121,6 +121,7 @@
                     :src="getImageUrl(collection.cover_image)"
                     :alt="collection.title"
                     class="w-full h-full object-cover"
+                    loading="lazy"
                   />
                   <div v-else class="flex items-center justify-center h-full">
                     <FolderIcon class="h-12 w-12 text-gray-400" />
@@ -144,6 +145,13 @@
                       {{ collection.privacy }}
                     </span>
                   </div>
+
+                  <!-- Published status indicator -->
+                  <div v-if="isMyCollections && !collection.is_published" class="absolute top-2 left-2">
+                    <span class="px-2 py-1 text-xs font-medium rounded bg-gray-100 text-gray-800">
+                      Draft
+                    </span>
+                  </div>
                 </div>
 
                 <!-- Collection Info -->
@@ -151,7 +159,7 @@
                   <div class="flex items-start justify-between">
                     <div class="min-w-0 flex-1">
                       <Link
-                        :href="route('collections.show', collection.id)"
+                        :href="`/collections/${collection.slug}`"
                         class="text-lg font-medium text-gray-900 hover:text-blue-600 block truncate"
                       >
                         {{ collection.title }}
@@ -163,7 +171,7 @@
                       <div class="flex items-center mt-2 text-xs text-gray-400">
                         <span>{{ formatDate(collection.updated_at) }}</span>
                         <span class="mx-2">•</span>
-                        <span>by {{ collection.curator?.name || 'Unknown' }}</span>
+                        <span>by {{ collection.curator?.name || 'Anonymous' }}</span>
                       </div>
                     </div>
 
@@ -176,19 +184,30 @@
                           </button>
                         </template>
                         <template #content>
-                          <DropdownLink :href="route('collections.show', collection.id)">
+                          <DropdownLink :href="`/collections/${collection.slug}`">
                             <EyeIcon class="h-4 w-4 mr-2" />
                             View Collection
                           </DropdownLink>
-                          <DropdownLink :href="route('collections.edit', collection.id)">
+                          <DropdownLink :href="`/collections/${collection.slug}/edit`">
                             <PencilIcon class="h-4 w-4 mr-2" />
                             Edit Collection
                           </DropdownLink>
                           <div class="border-t border-gray-100"></div>
-                          <DropdownLink @click="deleteCollection(collection)" class="text-red-600">
+                          <button
+                            @click="togglePublishStatus(collection)"
+                            class="flex w-full items-center px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"
+                          >
+                            <component :is="collection.is_published ? EyeSlashIcon : EyeIcon" class="h-4 w-4 mr-2" />
+                            {{ collection.is_published ? 'Unpublish' : 'Publish' }}
+                          </button>
+                          <div class="border-t border-gray-100"></div>
+                          <button
+                            @click="deleteCollection(collection)"
+                            class="flex w-full items-center px-4 py-2 text-sm text-left text-red-600 hover:bg-gray-100"
+                          >
                             <TrashIcon class="h-4 w-4 mr-2" />
                             Delete
-                          </DropdownLink>
+                          </button>
                         </template>
                       </Dropdown>
                     </div>
@@ -201,9 +220,14 @@
             <div v-else class="text-center py-12">
               <FolderIcon class="mx-auto h-12 w-12 text-gray-400" />
               <h3 class="mt-2 text-sm font-medium text-gray-900">{{ getEmptyMessage() }}</h3>
+              <p class="mt-1 text-sm text-gray-500">
+                <span v-if="hasFilters">Try adjusting your search criteria.</span>
+                <span v-else-if="isMyCollections">Create your first collection to organize your images.</span>
+                <span v-else>Check back later for new collections.</span>
+              </p>
               <div v-if="canCreate && isMyCollections" class="mt-6">
                 <Link
-                  :href="route('collections.create')"
+                  href="/collections/create"
                   class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
                 >
                   <PlusIcon class="-ml-1 mr-2 h-5 w-5" />
@@ -213,12 +237,25 @@
             </div>
 
             <!-- Pagination -->
-            <Pagination
-              v-if="collections.data && collections.data.length > 0 && collections.meta"
-              :links="collections.links || []"
-              :meta="collections.meta || {}"
-              class="mt-6"
-            />
+            <div v-if="collections.links && collections.links.length > 3" class="mt-6">
+              <nav class="flex justify-center">
+                <div class="flex space-x-1">
+                  <Link
+                    v-for="link in collections.links"
+                    :key="link.label"
+                    :href="link.url || '#'"
+                    :class="[
+                      'px-3 py-2 text-sm rounded-md',
+                      link.active 
+                        ? 'bg-blue-500 text-white' 
+                        : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300',
+                      !link.url ? 'opacity-50 cursor-not-allowed' : ''
+                    ]"
+                    v-html="link.label"
+                  />
+                </div>
+              </nav>
+            </div>
           </div>
         </div>
       </div>
@@ -229,18 +266,17 @@
 <script setup>
 import { reactive, computed } from 'vue'
 import { Head, Link, router } from '@inertiajs/vue3'
-import route from 'ziggy-js'
 import { 
   PlusIcon, 
   FolderIcon, 
   EyeIcon, 
+  EyeSlashIcon,
   PencilIcon, 
   TrashIcon,
   EllipsisVerticalIcon
 } from '@heroicons/vue/24/outline'
 
 import AppLayout from '@/Layouts/AppLayout.vue'
-import Pagination from '@/Components/Pagination.vue'
 import Dropdown from '@/Components/Dropdown.vue'
 import DropdownLink from '@/Components/DropdownLink.vue'
 
@@ -272,9 +308,9 @@ const search = () => {
     Object.entries(searchForm).filter(([key, value]) => value !== '')
   )
   
-  const routeName = props.isMyCollections ? 'my.collections' : 'collections.index'
+  const routeName = props.isMyCollections ? '/my/collections' : '/collections'
   
-  router.get(route(routeName), cleanForm, {
+  router.get(routeName, cleanForm, {
     preserveState: true,
     replace: true,
   })
@@ -298,16 +334,45 @@ const getImageUrl = (image) => {
 
 const formatDate = (date) => {
   if (!date) return 'Unknown'
-  return new Date(date).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  })
+  try {
+    return new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    })
+  } catch (e) {
+    return 'Invalid date'
+  }
 }
 
 const deleteCollection = (collection) => {
-  if (confirm(`Are you sure you want to delete "${collection.title}"?`)) {
-    router.delete(route('collections.destroy', collection.id))
+  if (confirm(`Are you sure you want to delete "${collection.title}"? This action cannot be undone.`)) {
+    router.delete(`/collections/${collection.slug}`, {
+      onSuccess: () => {
+        // Success handled by redirect
+      },
+      onError: (errors) => {
+        console.error('Delete failed:', errors)
+        alert('Failed to delete collection. Please try again.')
+      }
+    })
+  }
+}
+
+const togglePublishStatus = (collection) => {
+  const action = collection.is_published ? 'unpublish' : 'publish'
+  const message = `Are you sure you want to ${action} "${collection.title}"?`
+  
+  if (confirm(message)) {
+    router.post(`/collections/${collection.slug}/toggle-publish`, {}, {
+      onSuccess: () => {
+        // Success handled by page refresh
+      },
+      onError: (errors) => {
+        console.error('Toggle publish failed:', errors)
+        alert(`Failed to ${action} collection. Please try again.`)
+      }
+    })
   }
 }
 

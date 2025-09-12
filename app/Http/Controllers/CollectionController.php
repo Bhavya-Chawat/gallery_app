@@ -6,6 +6,7 @@ use App\Models\Collection;
 use App\Models\Image;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Str;
 
 class CollectionController extends Controller
 {
@@ -48,10 +49,7 @@ class CollectionController extends Controller
         $collections = $query->paginate(12)->withQueryString();
 
         $currentUser = auth()->user();
-        $canCreate = $currentUser && (
-            $currentUser->hasRole('admin') || 
-            $currentUser->hasRole('editor')
-        );
+        $canCreate = true;
 
         return Inertia::render('Collections/Index', [
             'collections' => $collections,
@@ -66,6 +64,11 @@ class CollectionController extends Controller
      */
     public function myCollections(Request $request)
     {
+        // Auth check
+        if (!auth()->check()) {
+            return redirect()->route('login');
+        }
+
         $user = auth()->user();
         
         $query = Collection::with(['curator', 'coverImage'])
@@ -116,74 +119,66 @@ class CollectionController extends Controller
     /**
      * Show the form for creating a new collection
      */
-public function create()
-{
-    // Remove authorization check temporarily
-    // $this->authorize('create', Collection::class);
-    
-    // Simple auth check instead
-    if (!auth()->check()) {
-        return redirect()->route('login');
+    public function create()
+    {
+        return Inertia::render('Collections/Create');
     }
-    
-    return Inertia::render('Collections/Create');
-}
+
     /**
      * Store a newly created collection
      */
-   public function store(Request $request)
-{
-    // Simple auth check instead of authorization
-    if (!auth()->check()) {
-        return redirect()->route('login');
-    }
+    public function store(Request $request)
+    {
+        $userId = auth()->id();
 
-    $request->validate([
-        'title' => 'required|string|max:255',
-        'description' => 'nullable|string|max:1000',
-        'privacy' => 'required|in:public,unlisted,private',
-        'type' => 'required|in:manual,smart',
-        'initial_images' => 'nullable|array',
-        'initial_images.*' => 'exists:images,id',
-    ]);
-
-    $collection = Collection::create([
-        'curator_id' => auth()->id(),
-        'title' => $request->title,
-        'description' => $request->description,
-        'privacy' => $request->privacy,
-        'is_published' => $request->privacy !== 'private',
-        'published_at' => $request->privacy !== 'private' ? now() : null,
-    ]);
-
-    // Add initial images if provided
-    if ($request->initial_images && count($request->initial_images) > 0) {
-        $imageData = [];
-        foreach ($request->initial_images as $index => $imageId) {
-            $imageData[$imageId] = [
-                'added_at' => now(),
-                'position' => $index + 1,
-            ];
-        }
-        
-        $collection->images()->attach($imageData);
-        $collection->update([
-            'images_count' => count($request->initial_images),
-            'cover_image_id' => $request->initial_images[0] ?? null,
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string|max:1000',
+            'privacy' => 'required|in:public,unlisted,private',
+            'type' => 'nullable|in:manual,smart',
+            'initial_images' => 'nullable|array',
+            'initial_images.*' => 'exists:images,id',
         ]);
+
+        $collection = Collection::create([
+            'curator_id' => $userId,
+            'title' => $request->title,
+            'description' => $request->description,
+            'privacy' => $request->privacy,
+            'is_published' => $request->privacy !== 'private',
+            'published_at' => $request->privacy !== 'private' ? now() : null,
+        ]);
+
+        // Add initial images if provided
+        if ($request->initial_images && count($request->initial_images) > 0) {
+            $imageData = [];
+            foreach ($request->initial_images as $index => $imageId) {
+                $imageData[$imageId] = [
+                    'added_at' => now(),
+                    'position' => $index + 1,
+                ];
+            }
+            
+            $collection->images()->attach($imageData);
+            $collection->update([
+                'images_count' => count($request->initial_images),
+                'cover_image_id' => $request->initial_images[0] ?? null,
+            ]);
+        }
+
+        return redirect("/collections/{$collection->slug}")
+            ->with('success', 'Collection created successfully!');
     }
-
-    return redirect()->route('collections.show', $collection)
-        ->with('success', 'Collection created successfully.');
-}
-
 
     /**
      * Display the specified collection
      */
     public function show(Collection $collection)
     {
-        $this->authorize('view', $collection);
+        // Simple public access check
+        if ($collection->privacy === 'private' && (!auth()->check() || auth()->id() !== $collection->curator_id)) {
+            abort(404);
+        }
 
         // Load relationships
         $collection->load(['curator']);
@@ -200,6 +195,7 @@ public function create()
         return Inertia::render('Collections/Show', [
             'collection' => [
                 'id' => $collection->id,
+                'slug' => $collection->slug,
                 'title' => $collection->title,
                 'description' => $collection->description,
                 'privacy' => $collection->privacy,
@@ -211,9 +207,9 @@ public function create()
             ],
             'images' => $images,
             'can' => [
-                'update' => auth()->user()?->can('update', $collection) ?? false,
-                'delete' => auth()->user()?->can('delete', $collection) ?? false,
-                'addImages' => auth()->user()?->can('update', $collection) ?? false,
+                'update' => auth()->check() && (auth()->id() === $collection->curator_id),
+                'delete' => auth()->check() && (auth()->id() === $collection->curator_id),
+                'addImages' => auth()->check() && (auth()->id() === $collection->curator_id),
             ],
         ]);
     }
@@ -223,11 +219,15 @@ public function create()
      */
     public function edit(Collection $collection)
     {
-        $this->authorize('update', $collection);
+        // Simple ownership check
+        if (!auth()->check() || auth()->id() !== $collection->curator_id) {
+            return redirect('/login');
+        }
 
         return Inertia::render('Collections/Edit', [
             'collection' => [
                 'id' => $collection->id,
+                'slug' => $collection->slug,
                 'title' => $collection->title,
                 'description' => $collection->description,
                 'privacy' => $collection->privacy,
@@ -244,23 +244,68 @@ public function create()
      */
     public function update(Request $request, Collection $collection)
     {
-        $this->authorize('update', $collection);
+        // Simple ownership check
+        if (!auth()->check() || auth()->id() !== $collection->curator_id) {
+            if ($request->expectsJson()) {
+                return response()->json(['error' => 'Unauthorized'], 403);
+            }
+            return redirect('/login');
+        }
 
-        $request->validate([
+        // Validate input
+        $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
             'privacy' => 'required|in:public,unlisted,private',
         ]);
 
-        $collection->update([
-            'title' => $request->title,
-            'description' => $request->description,
-            'privacy' => $request->privacy,
-            'is_published' => $request->privacy !== 'private',
-            'published_at' => $request->privacy !== 'private' && !$collection->is_published ? now() : $collection->published_at,
-        ]);
+        // Update slug if title changed
+        $updateData = [
+            'title' => $validated['title'],
+            'description' => $validated['description'],
+            'privacy' => $validated['privacy'],
+            'is_published' => $validated['privacy'] !== 'private',
+        ];
 
-        return redirect()->route('collections.show', $collection)
+        // Update slug if title changed
+        if ($collection->title !== $validated['title']) {
+            $newSlug = Str::slug($validated['title']);
+            
+            // Ensure slug uniqueness
+            $originalSlug = $newSlug;
+            $counter = 1;
+            while (Collection::where('slug', $newSlug)->where('id', '!=', $collection->id)->exists()) {
+                $newSlug = $originalSlug . '-' . $counter;
+                $counter++;
+            }
+            
+            $updateData['slug'] = $newSlug;
+        }
+
+        // Update published_at timestamp
+        if ($validated['privacy'] !== 'private' && !$collection->is_published) {
+            $updateData['published_at'] = now();
+        } elseif ($validated['privacy'] === 'private') {
+            $updateData['published_at'] = null;
+        }
+
+        $collection->update($updateData);
+
+        // Handle different response types
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Collection updated successfully.',
+                'collection' => [
+                    'slug' => $collection->slug,
+                    'title' => $collection->title,
+                ]
+            ]);
+        }
+
+        // Use the updated slug for redirect
+        $redirectSlug = $updateData['slug'] ?? $collection->slug;
+        return redirect("/collections/{$redirectSlug}")
             ->with('success', 'Collection updated successfully.');
     }
 
@@ -269,12 +314,16 @@ public function create()
      */
     public function destroy(Collection $collection)
     {
-        $this->authorize('delete', $collection);
+        // Simple ownership check
+        if (!auth()->check() || auth()->id() !== $collection->curator_id) {
+            return redirect('/login');
+        }
 
+        $collectionTitle = $collection->title;
         $collection->delete();
 
-        return redirect()->route('collections.index')
-            ->with('success', 'Collection deleted successfully.');
+        return redirect('/collections')
+            ->with('success', "Collection '{$collectionTitle}' deleted successfully.");
     }
 
     /**
@@ -282,7 +331,10 @@ public function create()
      */
     public function addImage(Request $request, Collection $collection)
     {
-        $this->authorize('update', $collection);
+        // Simple ownership check
+        if (!auth()->check() || auth()->id() !== $collection->curator_id) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
 
         $request->validate([
             'image_id' => 'required|exists:images,id',
@@ -306,11 +358,16 @@ public function create()
             if (!$collection->cover_image_id) {
                 $collection->update(['cover_image_id' => $image->id]);
             }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Image added to collection successfully.'
+            ]);
         }
 
         return response()->json([
-            'success' => true,
-            'message' => 'Image added to collection successfully.'
+            'success' => false,
+            'message' => 'Image is already in this collection.'
         ]);
     }
 
@@ -319,7 +376,10 @@ public function create()
      */
     public function removeImage(Request $request, Collection $collection)
     {
-        $this->authorize('update', $collection);
+        // Simple ownership check
+        if (!auth()->check() || auth()->id() !== $collection->curator_id) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
 
         $request->validate([
             'image_id' => 'required|exists:images,id',
@@ -338,11 +398,16 @@ public function create()
                 $newCover = $collection->images()->first();
                 $collection->update(['cover_image_id' => $newCover?->id]);
             }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Image removed from collection successfully.'
+            ]);
         }
 
         return response()->json([
-            'success' => true,
-            'message' => 'Image removed from collection successfully.'
+            'success' => false,
+            'message' => 'Image was not found in this collection.'
         ]);
     }
 
@@ -351,14 +416,19 @@ public function create()
      */
     public function togglePublish(Collection $collection)
     {
-        $this->authorize('update', $collection);
+        // Simple ownership check
+        if (!auth()->check() || auth()->id() !== $collection->curator_id) {
+            return redirect('/login');
+        }
 
+        $newStatus = !$collection->is_published;
+        
         $collection->update([
-            'is_published' => !$collection->is_published,
-            'published_at' => !$collection->is_published ? now() : null,
+            'is_published' => $newStatus,
+            'published_at' => $newStatus ? now() : null,
         ]);
 
-        $status = $collection->is_published ? 'published' : 'unpublished';
+        $status = $newStatus ? 'published' : 'unpublished';
         
         return back()->with('success', "Collection {$status} successfully.");
     }

@@ -179,14 +179,12 @@ class Image extends Model
         return str_replace("minio:9000", "localhost:9000", $url);
     }
 
-        public function collections()
-    {
-        return $this->belongsToMany(Collection::class, 'collection_items', 'collectable_id', 'collection_id')
-            ->where('collection_items.collectable_type', self::class)
-            ->withTimestamps();
-    }
-
-
+public function collections(): BelongsToMany
+{
+    return $this->belongsToMany(Collection::class, 'collection_image') // Use collection_image table
+        ->withPivot(['added_at', 'position'])
+        ->withTimestamps();
+}
 
     // Status Methods
     public function isPublic(): bool
