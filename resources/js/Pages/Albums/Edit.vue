@@ -1,6 +1,6 @@
 <template>
   <AppLayout>
-    <Head :title="`Edit ${album.title}`" />
+    <Head :title="album ? `Edit ${album.title}` : 'Edit Album'" />
 
     <template #header>
       <div class="flex items-center justify-between">
@@ -10,7 +10,7 @@
               <li>
                 <Link :href="route('albums.index')" class="text-gray-400 hover:text-gray-500">Albums</Link>
               </li>
-              <li class="flex">
+              <li v-if="album" class="flex">
                 <ChevronRightIcon class="flex-shrink-0 h-5 w-5 text-gray-400" />
                 <Link :href="route('albums.show', album.slug)" class="text-gray-400 hover:text-gray-500">
                   {{ album.title }}
@@ -27,7 +27,7 @@
       </div>
     </template>
 
-    <div class="py-12">
+    <div v-if="album" class="py-12">
       <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 space-y-6">
         <!-- Basic Info Form -->
         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
@@ -109,7 +109,7 @@
         </div>
 
         <!-- Cover Image Selection -->
-        <div v-if="images.length > 0" class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+        <div v-if="images && images.length > 0" class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
           <div class="p-6">
             <h3 class="text-lg font-medium text-gray-900 mb-4">Choose Cover Image</h3>
             <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -117,7 +117,7 @@
                 v-for="image in images"
                 :key="image.id"
                 @click="selectCoverImage(image.id)"
-                class="aspect-square bg-gray-100 rounded-lg overflow-hidden cursor-pointer border-2 transition-colors"
+                class="relative aspect-square bg-gray-100 rounded-lg overflow-hidden cursor-pointer border-2 transition-colors"
                 :class="{
                   'border-blue-500 ring-2 ring-blue-200': form.cover_image_id === image.id,
                   'border-transparent hover:border-gray-300': form.cover_image_id !== image.id
@@ -153,6 +153,18 @@
         </div>
       </div>
     </div>
+
+    <!-- Loading state when album is not loaded -->
+    <div v-else class="py-12">
+      <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
+        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+          <div class="p-6 text-center">
+            <div class="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+            <p class="mt-4 text-gray-600">Loading album...</p>
+          </div>
+        </div>
+      </div>
+    </div>
   </AppLayout>
 </template>
 
@@ -165,19 +177,26 @@ import { ChevronRightIcon, FolderIcon, CheckIcon } from '@heroicons/vue/24/outli
 import AppLayout from '@/Layouts/AppLayout.vue'
 
 const props = defineProps({
-  album: Object,
-  images: Array,
+  album: {
+    type: Object,
+    required: true
+  },
+  images: {
+    type: Array,
+    default: () => []
+  },
 })
 
+// Initialize form with safe defaults
 const form = useForm({
-  title: props.album.title,
-  description: props.album.description,
-  privacy: props.album.privacy,
-  cover_image_id: props.album.cover_image_id,
+  title: props.album?.title || '',
+  description: props.album?.description || '',
+  privacy: props.album?.privacy || 'public',
+  cover_image_id: props.album?.cover_image_id || null,
 })
 
 const currentCoverImage = computed(() => {
-  if (form.cover_image_id) {
+  if (form.cover_image_id && props.images) {
     return props.images.find(img => img.id === form.cover_image_id)
   }
   return null
@@ -195,6 +214,13 @@ const selectCoverImage = (imageId) => {
 }
 
 const submit = () => {
-  form.patch(route('albums.update', props.album.id))
+  if (!props.album?.id) return
+  
+  form.patch(route('albums.update', props.album.id), {
+    onSuccess: () => {
+      // Redirect to album show page after successful update
+      window.location.href = route('albums.show', props.album.slug)
+    }
+  })
 }
 </script>

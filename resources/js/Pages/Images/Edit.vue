@@ -119,11 +119,71 @@
           <div class="bg-white shadow-sm rounded-lg p-6">
             <h3 class="text-lg font-medium text-gray-900 mb-4">Tags</h3>
             
-            <TagInput
-              v-model="form.tags"
-              :available-tags="availableTags"
-              placeholder="Add tags to help people discover your image"
-            />
+            <!-- Tag Input -->
+            <div class="space-y-4">
+              <div>
+                <div class="flex items-center space-x-2">
+                  <input
+                    v-model="newTag"
+                    @keydown.enter.prevent="addTag"
+                    @keydown.comma.prevent="addTag"
+                    type="text"
+                    placeholder="Type a tag and press Enter or comma"
+                    class="flex-1 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  >
+                  <button
+                    type="button"
+                    @click="addTag"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    Add Tag
+                  </button>
+                </div>
+                <p class="mt-1 text-sm text-gray-500">
+                  Press Enter or comma to add tags. Use lowercase, no spaces.
+                </p>
+              </div>
+
+              <!-- Current Tags -->
+              <div v-if="form.tags.length > 0">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Current Tags:</label>
+                <div class="flex flex-wrap gap-2">
+                  <span
+                    v-for="(tag, index) in form.tags"
+                    :key="index"
+                    class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
+                  >
+                    {{ tag }}
+                    <button
+                      type="button"
+                      @click="removeTag(index)"
+                      class="ml-2 text-blue-600 hover:text-blue-800 focus:outline-none"
+                    >
+                      ×
+                    </button>
+                  </span>
+                </div>
+              </div>
+
+              <!-- Popular Tags -->
+              <div v-if="availableTags.length > 0">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Popular Tags:</label>
+                <div class="flex flex-wrap gap-2">
+                  <button
+                    v-for="tag in availableTags.slice(0, 10)"
+                    :key="tag.name"
+                    type="button"
+                    @click="addExistingTag(tag.name)"
+                    :disabled="form.tags.includes(tag.name)"
+                    class="px-3 py-1 text-sm border border-gray-300 rounded-full hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    :class="{ 'bg-blue-50 border-blue-300': form.tags.includes(tag.name) }"
+                  >
+                    {{ tag.name }} ({{ tag.count }})
+                  </button>
+                </div>
+              </div>
+            </div>
+            
             <InputError class="mt-2" :message="form.errors.tags" />
           </div>
 
@@ -226,6 +286,7 @@
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import { Head, Link, useForm, router } from "@inertiajs/vue3"
 import route from 'ziggy-js'
 import { ChevronRightIcon } from '@heroicons/vue/24/outline'
@@ -235,7 +296,6 @@ import InputError from '@/Components/InputError.vue'
 import InputLabel from '@/Components/InputLabel.vue'
 import PrimaryButton from '@/Components/PrimaryButton.vue'
 import TextInput from '@/Components/TextInput.vue'
-import TagInput from '@/Components/TagsInput.vue'
 
 const props = defineProps({
   image: Object,
@@ -249,6 +309,8 @@ const props = defineProps({
   },
 })
 
+const newTag = ref('')
+
 const form = useForm({
   title: props.image.title,
   caption: props.image.caption,
@@ -257,16 +319,34 @@ const form = useForm({
   license: props.image.license,
   album_id: props.image.album_id,
   tags: props.image.tags?.map(tag => tag.name) || [],
-  allow_comments: props.image.allow_comments,
-  allow_downloads: props.image.allow_downloads,
+  allow_comments: props.image.allow_comments ?? true,
+  allow_downloads: props.image.allow_downloads ?? true,
 })
 
 const getImageUrl = (variant = 'medium') => {
-  // Use direct MinIO URL since thumbnails aren't processed yet
   if (props.image.storage_path) {
     return `http://localhost:9000/gallery-images/${props.image.storage_path}`
   }
   return props.image.url || '/images/placeholder.jpg'
+}
+
+const addTag = () => {
+  const tag = newTag.value.trim().toLowerCase().replace(/\s+/g, '-')
+  
+  if (tag && !form.tags.includes(tag)) {
+    form.tags.push(tag)
+    newTag.value = ''
+  }
+}
+
+const addExistingTag = (tagName) => {
+  if (!form.tags.includes(tagName)) {
+    form.tags.push(tagName)
+  }
+}
+
+const removeTag = (index) => {
+  form.tags.splice(index, 1)
 }
 
 const submit = () => {

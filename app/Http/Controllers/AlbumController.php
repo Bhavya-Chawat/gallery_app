@@ -270,6 +270,7 @@ class AlbumController extends Controller
             'album' => [
                 'id' => $album->id,
                 'title' => $album->title,
+                'slug' => $album->slug,
                 'description' => $album->description,
                 'privacy' => $album->privacy,
                 'is_published' => $album->is_published,

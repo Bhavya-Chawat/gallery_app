@@ -16,25 +16,15 @@ use Inertia\Inertia;
 class ImageController extends Controller
 {
     /**
-     * Display a listing of images.
+     * Display public gallery images only.
      */
     public function index(Request $request)
     {
         $query = Image::with(['owner', 'album', 'tags']);
         
-        // Check if this is "My Images" request
-        $isMyImages = $request->get('owner') === 'mine' || $request->get('show_all');
-        $currentUser = auth()->user();
-        
-        // Apply visibility scope based on context
-        if ($isMyImages && $currentUser) {
-            // For "My Images" - show ALL user's images (including private/unpublished)
-            $query->where('owner_id', $currentUser->id);
-        } else {
-            // For public gallery - ONLY show published public/unlisted images
-            $query->whereIn('privacy', ['public', 'unlisted'])
-                  ->where('is_published', true);
-        }
+        // FIXED: Public gallery - ONLY show published public/unlisted images
+        $query->whereIn('privacy', ['public', 'unlisted'])
+              ->where('is_published', true);
         
         // Search
         if ($request->filled('search')) {
@@ -55,23 +45,17 @@ class ImageController extends Controller
             });
         }
         
-        // Filter by album
+        // Filter by album (only public albums)
         if ($request->filled('album')) {
             if ($request->album === 'none') {
                 $query->whereNull('album_id');
             } else {
-                $query->where('album_id', $request->album);
+                $query->where('album_id', $request->album)
+                      ->whereHas('album', function($q) {
+                          $q->whereIn('privacy', ['public', 'unlisted'])
+                            ->where('is_published', true);
+                      });
             }
-        }
-        
-        // Filter by privacy (only for "My Images")
-        if ($isMyImages && $request->filled('privacy')) {
-            $query->where('privacy', $request->privacy);
-        }
-        
-        // Filter by published status (only for "My Images")  
-        if ($isMyImages && $request->filled('published')) {
-            $query->where('is_published', $request->published === 'published');
         }
         
         // Filter by date range
@@ -103,9 +87,11 @@ class ImageController extends Controller
                 $query->orderBy('created_at', $direction);
         }
         
+        // FIXED: Paginate with proper count
         $images = $query->paginate(24)->withQueryString();
         
-        // Add user like status and collections to each image
+        // Add user like status if authenticated
+        $currentUser = auth()->user();
         if ($currentUser) {
             $imageIds = $images->pluck('id');
             $userLikes = Like::where('user_id', $currentUser->id)
@@ -120,10 +106,11 @@ class ImageController extends Controller
             });
         }
         
-        // Get additional data
-        $albums = $currentUser && $isMyImages 
-            ? $currentUser->albums()->select('id', 'title')->get()
-            : Album::where('is_published', true)->get(['id', 'title', 'slug']);
+        // Get public albums for filter dropdown
+        $albums = Album::where('is_published', true)
+                      ->whereIn('privacy', ['public', 'unlisted'])
+                      ->select('id', 'title', 'slug')
+                      ->get();
         
         // Get popular tags
         $popularTags = Tag::popular()->take(20)->get();
@@ -138,14 +125,14 @@ class ImageController extends Controller
             'images' => $images,
             'albums' => $albums,
             'popularTags' => $popularTags,
-            'filters' => $request->only(['search', 'tag', 'album', 'privacy', 'published', 'date_from', 'date_to', 'sort', 'direction']),
+            'filters' => $request->only(['search', 'tag', 'album', 'date_from', 'date_to', 'sort', 'direction']),
             'canUpload' => $canUpload,
-            'isMyImages' => $isMyImages,
+            'isMyImages' => false,
         ]);
     }
 
     /**
-     * Display user's own images with all statuses
+     * Display user's own images with all statuses.
      */
     public function myImages(Request $request)
     {
@@ -173,7 +160,7 @@ class ImageController extends Controller
             });
         }
         
-        // Filter by album
+        // Filter by album (user's albums only)
         if ($request->filled('album')) {
             if ($request->album === 'none') {
                 $query->whereNull('album_id');
@@ -225,6 +212,7 @@ class ImageController extends Controller
                 $query->orderBy('created_at', $direction);
         }
         
+        // FIXED: Paginate with proper count
         $images = $query->paginate(24)->withQueryString();
         
         // Add user like status to each image
@@ -251,7 +239,7 @@ class ImageController extends Controller
             'albums' => $albums,
             'popularTags' => $userTags,
             'filters' => $request->only(['search', 'tag', 'album', 'privacy', 'published', 'date_from', 'date_to', 'sort', 'direction']),
-            'canUpload' => $user->hasRole('admin') || $user->hasRole('editor'),
+            'canUpload' => true,
             'isMyImages' => true,
         ]);
     }
@@ -405,10 +393,10 @@ class ImageController extends Controller
         $this->authorize('view', $image);
 
         $image->load(['owner', 'album', 'tags', 'collections' => function($query) {
-    $query->with('curator');
-}]);
+            $query->with('curator');
+        }]);
 
-        // Record view - increment view count and record in view_counts table
+        // FIXED: Record view - increment view count
         if (!$request->ajax() && !$request->wantsJson()) {
             $this->recordView($image, $request);
         }
@@ -465,16 +453,16 @@ class ImageController extends Controller
                 'album' => $image->album,
                 'tags' => $image->tags,
                 'collections' => $image->collections->map(function($collection) {
-    return [
-        'id' => $collection->id,
-        'title' => $collection->title,  
-        'slug' => $collection->slug,
-        'curator' => [
-            'id' => $collection->curator->id,
-            'name' => $collection->curator->name,
-        ]
-    ];
-}),
+                    return [
+                        'id' => $collection->id,
+                        'title' => $collection->title,  
+                        'slug' => $collection->slug,
+                        'curator' => [
+                            'id' => $collection->curator->id,
+                            'name' => $collection->curator->name,
+                        ]
+                    ];
+                }),
                 'exif_data' => $image->exif_data,
             ],
             'relatedImages' => $relatedImages->map(function ($img) {
@@ -706,22 +694,32 @@ class ImageController extends Controller
     // Private helper methods
 
     /**
-     * Record a view for the image
+     * FIXED: Record a view for the image with proper session tracking
      */
     private function recordView(Image $image, Request $request)
     {
-        // Increment the image view count
-        $image->increment('views_count');
-
-        // Record in view_counts table for analytics
-        ViewCount::updateOrCreate(
-            [
-                'viewable_type' => Image::class,
-                'viewable_id' => $image->id,
-                'date' => now()->format('Y-m-d'),
-            ],
-            []
-        )->increment('count');
+        // Track unique views per session to avoid inflating counts
+        $sessionKey = 'viewed_images';
+        $viewedImages = session($sessionKey, []);
+        
+        if (!in_array($image->id, $viewedImages)) {
+            // Increment the image view count
+            $image->increment('views_count');
+            
+            // Add to session to prevent duplicate counting
+            $viewedImages[] = $image->id;
+            session([$sessionKey => $viewedImages]);
+            
+            // Record in view_counts table for analytics
+            ViewCount::updateOrCreate(
+                [
+                    'viewable_type' => Image::class,
+                    'viewable_id' => $image->id,
+                    'date' => now()->format('Y-m-d'),
+                ],
+                []
+            )->increment('count');
+        }
     }
 
     /**

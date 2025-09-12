@@ -73,9 +73,13 @@
                   
                   <!-- Owner Info -->
                   <div class="mt-4 flex items-center">
-                    <UserAvatar :user="image.owner" size="md" />
+                    <div class="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
+                      <span class="text-sm font-medium text-gray-700">
+                        {{ image.owner?.name?.charAt(0)?.toUpperCase() || '?' }}
+                      </span>
+                    </div>
                     <div class="ml-3">
-                      <p class="text-sm font-medium text-gray-900">{{ image.owner.name }}</p>
+                      <p class="text-sm font-medium text-gray-900">{{ image.owner?.name || 'Unknown' }}</p>
                       <p class="text-xs text-gray-500">{{ formatDate(image.created_at) }}</p>
                     </div>
                   </div>
@@ -149,7 +153,7 @@
                   <Link
                     v-for="tag in image.tags"
                     :key="tag.id"
-                    :href="route('search') + '?tag=' + encodeURIComponent(tag.name)"
+                    :href="route('gallery.index', { tag: tag.name })"
                     class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
                   >
                     #{{ tag.name }}
@@ -191,16 +195,20 @@
             </div>
 
             <!-- Comments Section -->
-            <div v-if="image.allow_comments" class="mt-6 bg-white rounded-lg shadow-sm p-6">
+            <div v-if="image.allow_comments !== false" class="mt-6 bg-white rounded-lg shadow-sm p-6">
               <h3 class="text-lg font-semibold text-gray-900 mb-6">
                 Comments ({{ currentCommentCount }})
               </h3>
               
               <!-- Add Comment Form -->
-              <div v-if="can.comment" class="mb-6">
+              <div v-if="can.comment && auth.user" class="mb-6">
                 <form @submit.prevent="submitComment" class="space-y-4">
                   <div class="flex items-start space-x-3">
-                    <UserAvatar :user="auth.user" size="sm" />
+                    <div class="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center flex-shrink-0">
+                      <span class="text-xs font-medium text-gray-700">
+                        {{ auth.user?.name?.charAt(0)?.toUpperCase() || '?' }}
+                      </span>
+                    </div>
                     <div class="flex-1">
                       <textarea
                         v-model="newComment"
@@ -226,6 +234,14 @@
                 </form>
               </div>
 
+              <!-- Login to Comment -->
+              <div v-else-if="!auth.user" class="mb-6 text-center py-4 border border-gray-200 rounded-lg">
+                <p class="text-gray-600">
+                  <Link :href="route('login')" class="text-blue-600 hover:text-blue-500">Sign in</Link>
+                  to join the conversation
+                </p>
+              </div>
+
               <!-- Comments List -->
               <div class="space-y-6">
                 <div
@@ -233,44 +249,40 @@
                   :key="comment.id"
                   class="flex items-start space-x-3"
                 >
-                  <UserAvatar :user="comment.user" size="sm" />
+                  <div class="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span class="text-xs font-medium text-gray-700">
+                      {{ comment.user?.name?.charAt(0)?.toUpperCase() || '?' }}
+                    </span>
+                  </div>
                   <div class="flex-1 min-w-0">
                     <div class="bg-gray-50 rounded-lg px-4 py-3">
                       <div class="flex items-center justify-between mb-1">
-                        <span class="text-sm font-medium text-gray-900">{{ comment.user.name }}</span>
+                        <span class="text-sm font-medium text-gray-900">{{ comment.user?.name || 'Unknown' }}</span>
                         <span class="text-xs text-gray-500">{{ formatDate(comment.created_at) }}</span>
                       </div>
                       <p class="text-sm text-gray-700 whitespace-pre-wrap">{{ comment.body }}</p>
                     </div>
                     
                     <!-- Comment Actions -->
-                    <div class="mt-2 flex items-center space-x-4 text-xs text-gray-500">
-                      <button
-                        v-if="auth.user"
-                        @click="toggleCommentLike(comment)"
-                        class="hover:text-red-500 transition-colors"
-                        :class="{ 'text-red-500': comment.user_has_liked }"
-                      >
-                        <HeartIcon class="h-3 w-3 inline mr-1" :class="{ 'fill-current': comment.user_has_liked }" />
-                        {{ comment.likes_count || 0 }}
-                      </button>
-                      
-                      <button
-                        v-if="auth.user"
-                        @click="replyToComment(comment)"
-                        class="hover:text-blue-500 transition-colors"
-                      >
-                        Reply
-                      </button>
-                      
-                      <button
-                        v-if="can.moderate || comment.user.id === auth.user?.id"
-                        @click="deleteComment(comment)"
-                        class="hover:text-red-500 transition-colors"
-                      >
-                        Delete
-                      </button>
-                    </div>
+<!-- AFTER: -->
+<div class="mt-2 flex items-center space-x-4 text-xs text-gray-500">
+  <button
+    v-if="auth.user"
+    @click="replyToComment(comment)"
+    class="hover:text-blue-500 transition-colors"
+  >
+    Reply
+  </button>
+  
+  <button
+    v-if="can.moderate || comment.user?.id === auth.user?.id"
+    @click="deleteComment(comment)"
+    class="hover:text-red-500 transition-colors"
+  >
+    Delete
+  </button>
+</div>
+
                   </div>
                 </div>
               </div>
@@ -402,7 +414,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch  } from 'vue'
+import { ref, computed } from 'vue'
 import { Head, Link, router } from '@inertiajs/vue3'
 import route from 'ziggy-js'
 import {
@@ -418,7 +430,6 @@ import {
 } from '@heroicons/vue/24/outline'
 
 import AppLayout from '@/Layouts/AppLayout.vue'
-import UserAvatar from '@/Components/UserAvatar.vue'
 import Dropdown from '@/Components/Dropdown.vue'
 import DropdownLink from '@/Components/DropdownLink.vue'
 import LikeButton from '@/Components/LikeButton.vue'
@@ -455,6 +466,7 @@ const formatNumber = (number) => {
 }
 
 const formatDate = (date) => {
+  if (!date) return 'Unknown'
   return new Date(date).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
@@ -504,38 +516,43 @@ const handleImageError = () => {
   imageError.value = true
 }
 
+// FIXED: Comments with proper error handling
 const submitComment = async () => {
   if (!newComment.value.trim()) return
   
   submittingComment.value = true
+  
   try {
-    const response = await axios.post(`/images/${props.image.slug}/comments`, {
+    router.post(route('images.comments.store', props.image.id), {
       body: newComment.value
+    }, {
+      onSuccess: (page) => {
+        // Add comment to local state
+        if (page.props.newComment) {
+          currentComments.value.unshift(page.props.newComment)
+        }
+        newComment.value = ''
+      },
+      onError: (errors) => {
+        console.error('Failed to post comment:', errors)
+      },
+      onFinish: () => {
+        submittingComment.value = false
+      }
     })
-    
-    // Add comment locally for immediate feedback
-    currentComments.value.unshift({
-      id: response.data.comment.id,
-      body: newComment.value,
-      user: props.auth.user,
-      created_at: new Date().toISOString(),
-      likes_count: 0,
-      user_has_liked: false,
-    })
-    
-    newComment.value = ''
   } catch (error) {
     console.error('Failed to post comment:', error)
-  } finally {
     submittingComment.value = false
   }
 }
 
 const toggleCommentLike = async (comment) => {
+  if (!props.auth.user) return
+  
   try {
     const response = await axios.post(route('likes.toggle'), {
       likeable_type: 'App\\Models\\Comment',
-      likeable_id: comment.id.toString(),
+      likeable_id: comment.id.toString()
     })
     
     comment.user_has_liked = response.data.liked
@@ -546,26 +563,35 @@ const toggleCommentLike = async (comment) => {
 }
 
 const replyToComment = (comment) => {
-  newComment.value = `@${comment.user.name} `
-  document.querySelector('textarea').focus()
+  newComment.value = `@${comment.user?.name || 'User'} `
+  document.querySelector('textarea')?.focus()
 }
 
 const deleteComment = async (comment) => {
   if (!confirm('Are you sure you want to delete this comment?')) return
   
   try {
-    await axios.delete(`/comments/${comment.id}`)
-    const index = currentComments.value.findIndex(c => c.id === comment.id)
-    if (index > -1) {
-      currentComments.value.splice(index, 1)
-    }
+    router.delete(route('comments.destroy', comment.id), {
+      onSuccess: () => {
+        const index = currentComments.value.findIndex(c => c.id === comment.id)
+        if (index > -1) {
+          currentComments.value.splice(index, 1)
+        }
+      }
+    })
   } catch (error) {
     console.error('Failed to delete comment:', error)
   }
 }
 
+const loadMoreComments = () => {
+  // Implement pagination loading
+  loadingComments.value = true
+  // Add your pagination logic here
+  loadingComments.value = false
+}
+
 const onAddedToCollection = (collection) => {
-  // Update image collections if needed
   if (!props.image.collections) {
     props.image.collections = []
   }
@@ -575,7 +601,9 @@ const onAddedToCollection = (collection) => {
 const copyLink = () => {
   const url = window.location.href
   navigator.clipboard.writeText(url).then(() => {
-    // TODO: Show success notification
+    alert('Link copied to clipboard!')
+  }).catch(() => {
+    prompt('Copy this link:', url)
   })
 }
 
@@ -585,6 +613,8 @@ const shareImage = () => {
       title: props.image.title,
       text: props.image.caption,
       url: window.location.href,
+    }).catch(() => {
+      copyLink()
     })
   } else {
     copyLink()

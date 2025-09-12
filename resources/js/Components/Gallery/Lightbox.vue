@@ -26,12 +26,12 @@
         <div class="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
           <div class="flex items-center space-x-3 min-w-0 flex-1">
             <!-- Image counter -->
-            <span v-if="images.length > 1" class="text-sm font-medium text-gray-600 flex-shrink-0">
+            <span v-if="images && images.length > 1" class="text-sm font-medium text-gray-600 flex-shrink-0">
               {{ currentIndex + 1 }} of {{ images.length }}
             </span>
-            <div class="h-4 w-px bg-gray-300 flex-shrink-0" v-if="images.length > 1"></div>
+            <div class="h-4 w-px bg-gray-300 flex-shrink-0" v-if="images && images.length > 1"></div>
             <h3 class="text-lg font-semibold text-gray-900 truncate">
-              {{ currentImage.title || 'Untitled' }}
+              {{ currentImage?.title || 'Untitled' }}
             </h3>
           </div>
           
@@ -68,7 +68,7 @@
             <div class="h-6 w-px bg-gray-300"></div>
 
             <!-- Navigation -->
-            <div v-if="images.length > 1" class="flex items-center space-x-1">
+            <div v-if="images && images.length > 1" class="flex items-center space-x-1">
               <button
                 @click="previousImage"
                 :disabled="currentIndex === 0"
@@ -97,19 +97,19 @@
                 </button>
               </template>
               <template #content>
-                <DropdownLink :href="route('images.show', currentImage.slug)">
+                <DropdownLink v-if="currentImage?.id" @click="viewFullPage">
                   <EyeIcon class="h-4 w-4 mr-2" />
                   View Full Page
                 </DropdownLink>
                 <DropdownLink
-                  v-if="currentImage.can?.update"
-                  :href="route('images.edit', currentImage.slug)"
+                  v-if="currentImage?.can?.update"
+                  @click="editImage"
                 >
                   <PencilIcon class="h-4 w-4 mr-2" />
                   Edit Image
                 </DropdownLink>
                 <DropdownLink
-                  v-if="currentImage.can?.download"
+                  v-if="currentImage?.can?.download"
                   @click="downloadImage"
                 >
                   <ArrowDownTrayIcon class="h-4 w-4 mr-2" />
@@ -152,6 +152,7 @@
             :class="{ 'cursor-grab': !isPanning && zoomLevel > 1, 'cursor-grabbing': isPanning }"
           >
             <img
+              v-if="currentImage"
               :src="currentImageUrl"
               :alt="currentImage.alt_text || currentImage.title"
               class="max-w-none transition-transform duration-200 select-none"
@@ -164,7 +165,7 @@
             
             <!-- Navigation Overlays for Large Screens -->
             <button
-              v-if="images.length > 1 && currentIndex > 0"
+              v-if="images && images.length > 1 && currentIndex > 0"
               @click="previousImage"
               class="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-black/50 hover:bg-black/70 text-white transition-all duration-200 opacity-0 group-hover:opacity-100"
               title="Previous Image (←)"
@@ -173,7 +174,7 @@
             </button>
             
             <button
-              v-if="images.length > 1 && currentIndex < images.length - 1"
+              v-if="images && images.length > 1 && currentIndex < images.length - 1"
               @click="nextImage"
               class="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-black/50 hover:bg-black/70 text-white transition-all duration-200 opacity-0 group-hover:opacity-100"
               title="Next Image (→)"
@@ -183,17 +184,17 @@
 
             <!-- Image Info Overlay -->
             <div 
-              v-if="showInfo"
+              v-if="showInfo && currentImage"
               class="absolute top-4 left-4 bg-black/70 text-white px-3 py-2 rounded-lg text-sm"
             >
-              <div>{{ currentImage.dimensions || 'Unknown' }}</div>
-              <div>{{ currentImage.formatted_size || 'Unknown size' }}</div>
+              <div>{{ getImageDimensions(currentImage) }}</div>
+              <div>{{ getImageSize(currentImage) }}</div>
             </div>
           </div>
 
           <!-- Sidebar (toggleable on mobile) -->
           <div 
-            v-if="showSidebar"
+            v-if="showSidebar && currentImage"
             class="lg:w-80 bg-white border-t lg:border-t-0 lg:border-l border-gray-200 overflow-y-auto"
             :class="{ 'absolute inset-x-0 bottom-0 top-auto max-h-1/2 lg:relative lg:max-h-none': isMobile }"
           >
@@ -208,10 +209,14 @@
               </button>
 
               <!-- Owner Info -->
-              <div class="flex items-center space-x-3 mb-4">
-                <UserAvatar v-if="currentImage.owner" :user="currentImage.owner" size="sm" />
+              <div v-if="currentImage.owner" class="flex items-center space-x-3 mb-4">
+                <div class="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                  <span class="text-xs font-medium text-gray-700">
+                    {{ currentImage.owner.name?.charAt(0)?.toUpperCase() || '?' }}
+                  </span>
+                </div>
                 <div>
-                  <p class="text-sm font-medium text-gray-900">{{ currentImage.owner?.name || 'Unknown' }}</p>
+                  <p class="text-sm font-medium text-gray-900">{{ currentImage.owner.name || 'Unknown' }}</p>
                   <p class="text-xs text-gray-500">{{ formatDate(currentImage.created_at) }}</p>
                 </div>
               </div>
@@ -241,12 +246,12 @@
                 
                 <div class="flex items-center justify-between">
                   <span class="text-gray-500">Dimensions</span>
-                  <span class="text-gray-900">{{ currentImage.dimensions || 'N/A' }}</span>
+                  <span class="text-gray-900">{{ getImageDimensions(currentImage) }}</span>
                 </div>
                 
                 <div class="flex items-center justify-between">
                   <span class="text-gray-500">Size</span>
-                  <span class="text-gray-900">{{ currentImage.formatted_size || 'N/A' }}</span>
+                  <span class="text-gray-900">{{ getImageSize(currentImage) }}</span>
                 </div>
                 
                 <div class="flex items-center justify-between">
@@ -256,7 +261,12 @@
 
                 <div v-if="currentImage.camera_make" class="flex items-center justify-between">
                   <span class="text-gray-500">Camera</span>
-                  <span class="text-gray-900">{{ currentImage.camera_make }} {{ currentImage.camera_model }}</span>
+                  <span class="text-gray-900">{{ currentImage.camera_make }} {{ currentImage.camera_model || '' }}</span>
+                </div>
+
+                <div v-if="currentImage.mime_type" class="flex items-center justify-between">
+                  <span class="text-gray-500">Format</span>
+                  <span class="text-gray-900">{{ currentImage.mime_type?.split('/')?.pop()?.toUpperCase() || 'Unknown' }}</span>
                 </div>
               </div>
 
@@ -264,16 +274,26 @@
               <div v-if="currentImage.tags && currentImage.tags.length" class="mt-6">
                 <h4 class="text-sm font-medium text-gray-900 mb-3">Tags</h4>
                 <div class="flex flex-wrap gap-2">
-                  <Link
+                  <button
                     v-for="tag in currentImage.tags"
                     :key="tag.id"
-<!--                     :href="route('tags.show', tag.slug)" -->
+                    @click="searchByTag(tag.name)"
                     class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
-                    @click="$emit('close')"
                   >
                     {{ tag.name }}
-                  </Link>
+                  </button>
                 </div>
+              </div>
+
+              <!-- Album Info -->
+              <div v-if="currentImage.album" class="mt-6">
+                <h4 class="text-sm font-medium text-gray-900 mb-3">Album</h4>
+                <button
+                  @click="goToAlbum"
+                  class="flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-700"
+                >
+                  <span>{{ currentImage.album.title }}</span>
+                </button>
               </div>
             </div>
           </div>
@@ -299,7 +319,7 @@
               </button>
 
               <button
-                v-if="currentImage.can?.download"
+                v-if="currentImage?.can?.download"
                 @click="downloadImage"
                 class="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
               >
@@ -369,12 +389,12 @@ import {
 
 import Dropdown from '@/Components/Dropdown.vue'
 import DropdownLink from '@/Components/DropdownLink.vue'
-import UserAvatar from '@/Components/UserAvatar.vue'
 
 const props = defineProps({
   images: {
     type: Array,
     required: true,
+    default: () => []
   },
   initialIndex: {
     type: Number,
@@ -403,12 +423,17 @@ const isPanning = ref(false)
 const lastPanPoint = ref({ x: 0, y: 0 })
 
 // Responsive
-const isMobile = ref(window.innerWidth < 1024)
+const isMobile = ref(false)
 
 // Computed
-const currentImage = computed(() => props.images[currentIndex.value])
+const currentImage = computed(() => {
+  if (!props.images || props.images.length === 0) return null
+  return props.images[currentIndex.value] || null
+})
 
 const currentImageUrl = computed(() => {
+  if (!currentImage.value) return '/images/placeholder.jpg'
+  
   const img = currentImage.value
   if (img.storage_path) {
     return `http://localhost:9000/gallery-images/${img.storage_path}`
@@ -425,16 +450,18 @@ const imageStyle = computed(() => ({
   transformOrigin: 'center center',
 }))
 
-// Watch for changes
+// FIXED: Watch for changes with proper validation
 watch(() => props.initialIndex, (newIndex) => {
-  currentIndex.value = newIndex
-  resetZoomAndPan()
+  if (newIndex >= 0 && newIndex < props.images.length) {
+    currentIndex.value = newIndex
+    resetZoomAndPan()
+  }
 })
 
 watch(currentImage, () => {
   loading.value = true
   resetZoomAndPan()
-})
+}, { immediate: true })
 
 // Methods
 const resetZoomAndPan = () => {
@@ -452,7 +479,36 @@ const handleImageError = () => {
   console.error('Failed to load image:', currentImageUrl.value)
 }
 
+// FIXED: Helper methods for image info
+const getImageDimensions = (image) => {
+  if (!image) return 'Unknown'
+  if (image.width && image.height) {
+    return `${image.width} × ${image.height}`
+  }
+  return image.dimensions || 'Unknown'
+}
+
+const getImageSize = (image) => {
+  if (!image) return 'Unknown'
+  if (image.formatted_size) {
+    return image.formatted_size
+  }
+  if (image.size_bytes) {
+    return formatBytes(image.size_bytes)
+  }
+  return 'Unknown'
+}
+
+const formatBytes = (bytes) => {
+  if (bytes === 0) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
+}
+
 const formatDate = (date) => {
+  if (!date) return 'Unknown'
   return new Date(date).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
@@ -461,6 +517,7 @@ const formatDate = (date) => {
 }
 
 const formatCount = (count) => {
+  if (!count || count === 0) return '0'
   if (count >= 1000000) return Math.floor(count / 1000000) + 'M'
   if (count >= 1000) return Math.floor(count / 1000) + 'K'
   return count.toString()
@@ -578,7 +635,7 @@ const endPan = () => {
 
 const toggleFullscreen = () => {
   if (!document.fullscreenElement) {
-    lightboxRef.value?.requestFullscreen?.() || document.documentElement.requestFullscreen()
+    lightboxRef.value?.requestFullscreen?.()
     isFullscreen.value = true
   } else {
     document.exitFullscreen()
@@ -586,34 +643,77 @@ const toggleFullscreen = () => {
   }
 }
 
+// FIXED: Action methods with proper error handling
+const viewFullPage = () => {
+  if (currentImage.value?.slug) {
+    emit('close')
+    router.visit(route('images.show', currentImage.value.slug))
+  } else if (currentImage.value?.id) {
+    // Fallback to ID if slug not available
+    emit('close')
+    router.visit(route('images.show', currentImage.value.id))
+  }
+}
+
+
+const editImage = () => {
+  if (currentImage.value?.id) {
+    emit('close')
+    router.visit(route('images.edit', currentImage.value.id))
+  }
+}
+
 const downloadImage = () => {
+  if (!currentImage.value?.id) return
+  
   const link = document.createElement('a')
-  link.href = route('images.download', currentImage.value.slug)
+  link.href = route('images.download', currentImage.value.id)
   link.download = currentImage.value.original_filename || 'image'
   link.click()
 }
 
 const copyLink = () => {
-  const imageRoute = route('images.show', currentImage.value.slug)
-  const fullUrl = imageRoute.startsWith('http') ? imageRoute : (window.location.origin + imageRoute)
+  if (!currentImage.value?.id) return
   
-  navigator.clipboard.writeText(fullUrl).then(() => {
-    alert('Link copied to clipboard!')
-  }).catch(err => {
-    console.error('Failed to copy link:', err)
-    prompt('Copy this link:', fullUrl)
-  })
+  try {
+    const imageRoute = route('images.show', currentImage.value.id)
+    const fullUrl = imageRoute.startsWith('http') ? imageRoute : (window.location.origin + imageRoute)
+    
+    navigator.clipboard.writeText(fullUrl).then(() => {
+      alert('Link copied to clipboard!')
+    }).catch(() => {
+      prompt('Copy this link:', fullUrl)
+    })
+  } catch (error) {
+    console.error('Failed to copy link:', error)
+  }
 }
 
 const shareImage = () => {
+  if (!currentImage.value?.id) return
+  
   if (navigator.share) {
     navigator.share({
       title: currentImage.value.title,
       text: currentImage.value.caption,
-      url: window.location.origin + route('images.show', currentImage.value.slug),
+      url: window.location.origin + route('images.show', currentImage.value.id),
+    }).catch(() => {
+      copyLink()
     })
   } else {
     copyLink()
+  }
+}
+
+const searchByTag = (tagName) => {
+  emit('close')
+  router.visit(route('gallery.index', { tag: tagName }))
+}
+
+const goToAlbum = () => {
+  if (currentImage.value?.album?.slug) {
+    emit('close')
+    router.visit(route('albums.show', currentImage.value.album.slug))
   }
 }
 
@@ -627,15 +727,23 @@ const handleResize = () => {
 }
 
 onMounted(() => {
+  // Set initial mobile state
+  isMobile.value = window.innerWidth < 1024
+  
+  // Hide help notice after 3 seconds
   setTimeout(() => {
     showHelpNotice.value = false
   }, 3000)
   
+  // Focus the lightbox for keyboard events
   nextTick(() => {
     lightboxRef.value?.focus()
   })
   
+  // Prevent body scroll
   document.body.style.overflow = 'hidden'
+  
+  // Add event listeners
   window.addEventListener('resize', handleResize)
   
   document.addEventListener('fullscreenchange', () => {
@@ -644,8 +752,13 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  // Restore body scroll
   document.body.style.overflow = ''
+  
+  // Remove event listeners
   window.removeEventListener('resize', handleResize)
+  
+  // Exit fullscreen if active
   if (document.fullscreenElement) {
     document.exitFullscreen()
   }

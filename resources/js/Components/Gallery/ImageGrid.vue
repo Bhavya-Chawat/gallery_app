@@ -1,7 +1,48 @@
 <template>
   <div>
-    <!-- Grid header -->
-    <div v-if="selectedImages.length > 0 || showBulkActions" class="mb-4 p-4 bg-blue-50 rounded-lg">
+    <!-- Count display with sort controls -->
+    <div class="flex items-center justify-between mb-6">
+      <div class="flex items-center space-x-4">
+        <span class="text-sm text-gray-500">
+          {{ images.length }} image{{ images.length !== 1 ? 's' : '' }}
+        </span>
+        
+        <select 
+          v-model="sortBy" 
+          @change="handleSortChange"
+          class="text-sm border border-gray-300 rounded-md px-3 py-1 focus:ring-blue-500 focus:border-blue-500"
+        >
+          <option value="created_at">Recently Added</option>
+          <option value="title">Title</option>
+          <option value="views">Most Viewed</option>
+          <option value="size">File Size</option>
+        </select>
+
+        <select 
+          v-model="sortDirection" 
+          @change="handleSortChange"
+          class="text-sm border border-gray-300 rounded-md px-3 py-1 focus:ring-blue-500 focus:border-blue-500"
+        >
+          <option value="desc">Descending</option>
+          <option value="asc">Ascending</option>
+        </select>
+      </div>
+
+      <!-- Select All checkbox (if bulk actions enabled) -->
+      <div v-if="showBulkActions && images.length > 0" class="flex items-center space-x-2">
+        <input
+          id="select-all"
+          v-model="selectAll"
+          @change="toggleSelectAll"
+          type="checkbox"
+          class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+        />
+        <label for="select-all" class="text-sm text-gray-700">Select All</label>
+      </div>
+    </div>
+
+    <!-- Bulk Actions Bar -->
+    <div v-if="selectedImages.length > 0" class="mb-4 p-4 bg-blue-50 rounded-lg">
       <BulkActionsBar
         :selected-count="selectedImages.length"
         :permissions="bulkPermissions"
@@ -13,13 +54,8 @@
       />
     </div>
 
-    <!-- Grid -->
-    <div
-      :class="[
-        'grid gap-4',
-        gridClasses
-      ]"
-    >
+    <!-- Images Grid -->
+    <div :class="['grid gap-4', gridClasses]">
       <ImageCard
         v-for="image in images"
         :key="image.id"
@@ -36,13 +72,11 @@
       />
     </div>
 
-    <!-- Empty state -->
+    <!-- Empty State -->
     <div v-if="images.length === 0" class="text-center py-12">
       <PhotoIcon class="mx-auto h-12 w-12 text-gray-400" />
       <h3 class="mt-2 text-sm font-medium text-gray-900">No images</h3>
-      <p class="mt-1 text-sm text-gray-500">
-        {{ emptyMessage }}
-      </p>
+      <p class="mt-1 text-sm text-gray-500">{{ emptyMessage }}</p>
       <div class="mt-6" v-if="showUploadLink">
         <Link
           :href="route('upload')"
@@ -54,21 +88,17 @@
       </div>
     </div>
 
-
-    <div v-if="lightboxOpen" class="fixed top-0 left-0 z-40 bg-red-500 text-white p-2">
-  DEBUG: Lightbox should be open! Index: {{ currentImageIndex }}
-</div>
-
-
     <!-- Lightbox -->
-<Lightbox
-  v-if="lightboxOpen"
-  :images="images"
-  :initial-index="currentImageIndex"
-  @close="closeLightbox"
-  @next="nextImage"
-  @prev="prevImage"
-/>
+    <Teleport to="body">
+      <Lightbox
+        v-if="lightboxOpen"
+        :images="images"
+        :initial-index="currentImageIndex"
+        @close="closeLightbox"
+        @next="nextImage"
+        @prev="prevImage"
+      />
+    </Teleport>
   </div>
 </template>
 
@@ -86,70 +116,41 @@ import BulkActionsBar from './BulkActionsBar.vue'
 import Lightbox from './Lightbox.vue'
 
 const props = defineProps({
-  images: {
-    type: Array,
-    default: () => [],
-  },
-  columns: {
-    type: [Number, String],
-    default: 'auto',
-  },
-  layout: {
-    type: String,
-    default: 'grid',
-    validator: (value) => ['grid', 'masonry'].includes(value),
-  },
-  cardSize: {
-    type: String,
-    default: 'medium',
-    validator: (value) => ['small', 'medium', 'large'].includes(value),
-  },
-  showBulkActions: {
-    type: Boolean,
-    default: false,
-  },
-  showInfo: {
-    type: Boolean,
-    default: true,
-  },
-  showUploadLink: {
-    type: Boolean,
-    default: false,
-  },
-  emptyMessage: {
-    type: String,
-    default: 'No images found.',
-  },
-  bulkPermissions: {
-    type: Object,
-    default: () => ({}),
-  },
+  images: { type: Array, default: () => [] },
+  columns: { type: [Number, String], default: 'auto' },
+  layout: { type: String, default: 'grid' },
+  cardSize: { type: String, default: 'medium' },
+  showBulkActions: { type: Boolean, default: false },
+  showInfo: { type: Boolean, default: true },
+  showUploadLink: { type: Boolean, default: false },
+  emptyMessage: { type: String, default: 'No images found.' },
+  bulkPermissions: { type: Object, default: () => ({}) },
 })
 
-const emit = defineEmits(['bulk-select', 'open-image'])
+const emit = defineEmits(['bulk-select', 'open-image', 'sort-change'])
 
+// State
 const selectedImages = ref([])
 const lightboxOpen = ref(false)
 const currentImageIndex = ref(0)
+const selectAll = ref(false)
+const sortBy = ref('created_at')
+const sortDirection = ref('desc')
 
+// Computed
 const gridClasses = computed(() => {
   if (props.columns === 'auto') {
     switch (props.cardSize) {
-      case 'small':
-        return 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8'
-      case 'medium':
-        return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
-      case 'large':
-        return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
-      default:
-        return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
+      case 'small': return 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8'
+      case 'medium': return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+      case 'large': return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
+      default: return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
     }
   }
   return `grid-cols-${props.columns}`
 })
 
-
-
+// Methods
 const toggleSelection = (imageId) => {
   const index = selectedImages.value.indexOf(imageId)
   if (index > -1) {
@@ -160,23 +161,36 @@ const toggleSelection = (imageId) => {
   emit('bulk-select', selectedImages.value)
 }
 
+const toggleSelectAll = () => {
+  if (selectAll.value) {
+    selectedImages.value = props.images.map(img => img.id)
+  } else {
+    selectedImages.value = []
+  }
+  emit('bulk-select', selectedImages.value)
+}
+
 const clearSelection = () => {
   selectedImages.value = []
+  selectAll.value = false
   emit('bulk-select', [])
 }
 
+const handleSortChange = () => {
+  emit('sort-change', {
+    sort: sortBy.value,
+    direction: sortDirection.value
+  })
+}
+
 const openImage = (imageId) => {
-  console.log('ImageGrid openImage called with:', imageId)
   const index = props.images.findIndex(img => img.id === imageId)
-  console.log('Found image at index:', index)
   if (index !== -1) {
     currentImageIndex.value = index
     lightboxOpen.value = true
-    console.log('Lightbox should open now, lightboxOpen:', lightboxOpen.value)
   }
   emit('open-image', imageId)
 }
-
 
 const closeLightbox = () => {
   lightboxOpen.value = false
@@ -197,43 +211,36 @@ const prevImage = () => {
 // Bulk actions
 const handleBulkDelete = () => {
   if (confirm(`Are you sure you want to delete ${selectedImages.value.length} images?`)) {
-    router.post(route('api.images.bulk'), {
+    router.post(route('images.bulk-action'), {
       action: 'delete',
-      ids: selectedImages.value,
+      image_ids: selectedImages.value,
     }, {
-      onSuccess: () => {
-        clearSelection()
-      },
+      onSuccess: () => clearSelection()
     })
   }
 }
 
 const handleBulkMove = (albumId) => {
-  router.post(route('api.images.bulk'), {
-    action: 'move',
-    ids: selectedImages.value,
-    payload: { album_id: albumId },
+  router.post(route('images.bulk-action'), {
+    action: 'move_to_album',
+    image_ids: selectedImages.value,
+    album_id: albumId,
   }, {
-    onSuccess: () => {
-      clearSelection()
-    },
+    onSuccess: () => clearSelection()
   })
 }
 
 const handleBulkEdit = (data) => {
-  router.post(route('api.images.bulk'), {
-    action: 'edit',
-    ids: selectedImages.value,
-    payload: data,
+  router.post(route('images.bulk-action'), {
+    action: 'privacy',
+    image_ids: selectedImages.value,
+    privacy_level: data.privacy,
   }, {
-    onSuccess: () => {
-      clearSelection()
-    },
+    onSuccess: () => clearSelection()
   })
 }
 
 const handleBulkDownload = () => {
-  // Implement bulk download logic
   console.log('Bulk download:', selectedImages.value)
 }
 </script>

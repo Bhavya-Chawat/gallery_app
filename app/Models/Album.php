@@ -177,46 +177,47 @@ class Album extends Model
         return $query->where('is_published', true);
     }
 
-    
-/**
- * Get the album's cover image or first image
- */
-public function getCoverImageAttribute()
-{
-    if ($this->cover_image_id && $this->coverImage) {
-        return $this->coverImage;
+    /**
+     * FIXED: Get the album's cover image or first image
+     */
+    public function getCoverImageAttribute()
+    {
+        // FIXED: Use direct database query instead of relationship to avoid loading issues
+        if ($this->cover_image_id) {
+            $coverImage = \App\Models\Image::find($this->cover_image_id);
+            if ($coverImage) {
+                return $coverImage;
+            }
+        }
+        
+        // Return first image as fallback
+        return $this->images()->first();
     }
-    
-    // Return first image as fallback
-    return $this->images()->first();
-}
 
-/**
- * Get optimized thumbnail URL
- */
-public function getThumbnailUrlAttribute()
-{
-    $coverImage = $this->cover_image;
-    
-    if ($coverImage && $coverImage->storage_path) {
-        return "http://localhost:9000/gallery-images/{$coverImage->storage_path}";
+    /**
+     * Get optimized thumbnail URL
+     */
+    public function getThumbnailUrlAttribute()
+    {
+        $coverImage = $this->cover_image;
+        
+        if ($coverImage && $coverImage->storage_path) {
+            return "http://localhost:9000/gallery-images/{$coverImage->storage_path}";
+        }
+        
+        return '/images/album-placeholder.jpg';
     }
-    
-    return '/images/album-placeholder.jpg';
-}
 
-/**
- * Auto-assign cover image when adding first image
- */
-public function autoAssignCoverImage()
-{
-    if (!$this->cover_image_id && $this->images()->count() > 0) {
-        $firstImage = $this->images()->orderBy('created_at', 'asc')->first();
-        if ($firstImage) {
-            $this->update(['cover_image_id' => $firstImage->id]);
+    /**
+     * Auto-assign cover image when adding first image
+     */
+    public function autoAssignCoverImage()
+    {
+        if (!$this->cover_image_id && $this->images()->count() > 0) {
+            $firstImage = $this->images()->orderBy('created_at', 'asc')->first();
+            if ($firstImage) {
+                $this->update(['cover_image_id' => $firstImage->id]);
+            }
         }
     }
-}
-
-
 }

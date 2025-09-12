@@ -153,7 +153,7 @@ Route::get('/albums/create', [AlbumController::class, 'create'])->name('albums.c
 Route::get('/albums/{album:slug}', [AlbumController::class, 'show'])->name('albums.show');
 
 // Comment routes (public POST, authenticated DELETE)
-Route::post('/images/{image:slug}/comments', [CommentController::class, 'store'])->middleware('auth')->name('images.comments.store');
+Route::post('/images/{image}/comments', [CommentController::class, 'store'])->middleware('auth')->name('images.comments.store');
 Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->middleware('auth')->name('comments.destroy');
 
 // Legal pages
