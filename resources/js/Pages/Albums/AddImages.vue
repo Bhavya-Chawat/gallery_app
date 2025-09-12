@@ -5,79 +5,63 @@
     <template #header>
       <div class="flex items-center justify-between">
         <div>
-          <nav class="flex" aria-label="Breadcrumb">
-            <ol class="flex items-center space-x-4">
-              <li>
-                <Link :href="route('albums.index')" class="text-gray-400 hover:text-gray-500">
-                  Albums
-                </Link>
-              </li>
-              <li class="flex">
-                <ChevronRightIcon class="flex-shrink-0 h-5 w-5 text-gray-400" />
-                <Link :href="route('albums.show', album.slug)" class="text-gray-400 hover:text-gray-500">
-                  {{ album.title }}
-                </Link>
-              </li>
-              <li class="flex">
-                <ChevronRightIcon class="flex-shrink-0 h-5 w-5 text-gray-400" />
-                <span class="ml-4 text-sm font-medium text-gray-900">Add Images</span>
-              </li>
-            </ol>
-          </nav>
-          <h2 class="mt-2 font-semibold text-xl text-gray-800 leading-tight">
-            Add Images to {{ album.title }}
+          <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+            Add Images to Album
           </h2>
+          <p class="text-sm text-gray-600 mt-1">
+            {{ album.title }}
+          </p>
+        </div>
+        <div class="flex items-center space-x-4">
+          <Link
+            :href="route('albums.show', album.slug)"
+            class="inline-flex items-center px-4 py-2 bg-gray-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700"
+          >
+            Back to Album
+          </Link>
         </div>
       </div>
     </template>
 
     <div class="py-12">
       <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-        <!-- Selection Summary -->
-        <div v-if="selectedImages.length > 0" class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <div class="flex items-center justify-between">
-            <span class="text-sm font-medium text-blue-900">
-              {{ selectedImages.length }} image(s) selected
-            </span>
-            <div class="flex items-center space-x-2">
-              <button
-                @click="addSelectedImages"
-                :disabled="addLoading"
-                class="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 disabled:opacity-50"
-              >
-                {{ addLoading ? 'Adding...' : 'Add to Album' }}
-              </button>
-              
-              <button
-                @click="clearSelection"
-                class="px-4 py-2 bg-gray-300 text-gray-700 text-sm rounded-md hover:bg-gray-400"
-              >
-                Clear Selection
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Available Images -->
         <div class="bg-white shadow-sm rounded-lg">
           <div class="p-6">
-            <div class="flex items-center justify-between mb-4">
-              <h3 class="text-lg font-medium text-gray-900">Available Images</h3>
+            <!-- Selection Controls -->
+            <div class="flex items-center justify-between mb-6">
+              <div class="flex items-center space-x-4">
+                <span class="text-sm text-gray-500">
+                  {{ availableImages.length }} available images
+                </span>
+                <div class="flex items-center space-x-2">
+                  <input
+                    id="select-all"
+                    v-model="selectAll"
+                    @change="toggleSelectAll"
+                    type="checkbox"
+                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label for="select-all" class="text-sm text-gray-700">Select All</label>
+                </div>
+              </div>
               
-              <!-- Select All -->
-              <div v-if="availableImages.length > 0" class="flex items-center space-x-2">
-                <input
-                  id="select-all"
-                  v-model="selectAll"
-                  @change="toggleSelectAll"
-                  type="checkbox"
-                  class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <label for="select-all" class="text-sm text-gray-700">Select All</label>
+              <div class="flex items-center space-x-2">
+                <span v-if="selectedImages.length > 0" class="text-sm text-blue-600">
+                  {{ selectedImages.length }} selected
+                </span>
+                <button
+                  @click="addSelectedImages"
+                  :disabled="selectedImages.length === 0 || form.processing"
+                  class="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {{ form.processing ? 'Adding...' : `Add ${selectedImages.length} Images` }}
+                </button>
               </div>
             </div>
-            
-            <div v-if="availableImages.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+
+            <!-- Images Grid -->
+            <div v-if="availableImages.length > 0" 
+                 class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
               <div
                 v-for="image in availableImages"
                 :key="image.id"
@@ -103,19 +87,21 @@
                 <!-- Image -->
                 <img
                   :src="getImageUrl(image)"
-                  :alt="image.alt_text || image.title"
-                  class="w-full h-full object-cover cursor-pointer"
-                  @click="toggleImageSelection(image.id)"
+                  :alt="image.title || 'Untitled'"
+                  class="w-full h-full object-cover"
                 />
 
                 <!-- Title overlay -->
                 <div class="absolute bottom-0 left-0 right-0 bg-black/50 text-white p-2 opacity-0 group-hover:opacity-100 transition-opacity">
                   <p class="text-xs font-medium truncate">{{ image.title || 'Untitled' }}</p>
+                  <p v-if="image.album_id" class="text-xs text-gray-300 truncate">
+                    Current: {{ getAlbumName(image.album_id) }}
+                  </p>
                 </div>
               </div>
             </div>
-            
-            <!-- No Images State -->
+
+            <!-- Empty State -->
             <div v-else class="text-center py-12">
               <PhotoIcon class="mx-auto h-12 w-12 text-gray-400" />
               <h3 class="mt-2 text-sm font-medium text-gray-900">No available images</h3>
@@ -140,32 +126,28 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { Head, Link, router } from '@inertiajs/vue3'
+import { ref, computed } from 'vue'
+import { Head, Link, useForm } from '@inertiajs/vue3'
 import route from 'ziggy-js'
-import { ChevronRightIcon, PhotoIcon, PlusIcon } from '@heroicons/vue/24/outline'
+import { PlusIcon, PhotoIcon } from '@heroicons/vue/24/outline'
 
 import AppLayout from '@/Layouts/AppLayout.vue'
 
 const props = defineProps({
-  album: Object,
-  availableImages: {
-    type: Array,
-    default: () => [],
-  },
+  album: { type: Object, required: true },
+  availableImages: { type: Array, default: () => [] },
+  userAlbums: { type: Array, default: () => [] }
 })
 
+// Form and selection state
 const selectedImages = ref([])
 const selectAll = ref(false)
-const addLoading = ref(false)
 
-const getImageUrl = (image) => {
-  if (image.storage_path) {
-    return `http://localhost:9000/gallery-images/${image.storage_path}`
-  }
-  return '/images/placeholder.jpg'
-}
+const form = useForm({
+  image_ids: []
+})
 
+// Methods
 const toggleSelectAll = () => {
   if (selectAll.value) {
     selectedImages.value = props.availableImages.map(img => img.id)
@@ -174,36 +156,28 @@ const toggleSelectAll = () => {
   }
 }
 
-const toggleImageSelection = (imageId) => {
-  const index = selectedImages.value.indexOf(imageId)
-  if (index > -1) {
-    selectedImages.value.splice(index, 1)
-  } else {
-    selectedImages.value.push(imageId)
-  }
-  
-  selectAll.value = selectedImages.value.length === props.availableImages.length
-}
-
-const clearSelection = () => {
-  selectedImages.value = []
-  selectAll.value = false
-}
-
 const addSelectedImages = () => {
   if (selectedImages.value.length === 0) return
 
-  addLoading.value = true
-
-  router.post(route('albums.add-images', props.album.id), {
-    image_ids: selectedImages.value
-  }, {
+  form.image_ids = selectedImages.value
+  
+  form.post(route('albums.add-images', props.album.id), {
     onSuccess: () => {
-      addLoading.value = false
-    },
-    onError: () => {
-      addLoading.value = false
+      selectedImages.value = []
+      selectAll.value = false
     }
   })
+}
+
+const getImageUrl = (image) => {
+  if (image.storage_path) {
+    return `http://localhost:9000/gallery-images/${image.storage_path}`
+  }
+  return '/images/placeholder.jpg'
+}
+
+const getAlbumName = (albumId) => {
+  const album = props.userAlbums.find(a => a.id === albumId)
+  return album ? album.title : 'Unknown Album'
 }
 </script>

@@ -43,7 +43,11 @@ class ImageController extends Controller
         
         // Filter by album
         if ($request->filled('album')) {
-            $query->where('album_id', $request->album);
+            if ($request->album === 'none') {
+                $query->whereNull('album_id');
+            } else {
+                $query->where('album_id', $request->album);
+            }
         }
         
         // Filter by privacy (only for "My Images")
@@ -76,7 +80,7 @@ class ImageController extends Controller
                 $query->orderBy('views_count', $direction);
                 break;
             case 'size':
-                $query->orderBy('file_size', $direction);
+                $query->orderBy('size_bytes', $direction);
                 break;
             default:
                 $query->orderBy('created_at', $direction);
@@ -85,7 +89,9 @@ class ImageController extends Controller
         $images = $query->paginate(24)->withQueryString();
         
         // Get additional data
-        $albums = Album::where('is_published', true)->get(['id', 'title', 'slug']);
+        $albums = $currentUser && $isMyImages 
+            ? $currentUser->albums()->select('id', 'title')->get()
+            : Album::where('is_published', true)->get(['id', 'title', 'slug']);
         
         // Check upload permission
         $canUpload = $currentUser && (
@@ -103,15 +109,98 @@ class ImageController extends Controller
     }
 
     /**
-     * Bulk operations for user's images
+     * Display user's own images with all statuses
+     */
+    public function myImages(Request $request)
+    {
+        $user = auth()->user();
+        
+        $query = Image::with(['owner', 'album'])
+            ->where('owner_id', $user->id);
+        
+        // Search
+        if ($request->filled('search')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('title', 'like', '%' . $request->search . '%')
+                  ->orWhere('caption', 'like', '%' . $request->search . '%')
+                  ->orWhere('alt_text', 'like', '%' . $request->search . '%');
+            });
+        }
+        
+        // Filter by album
+        if ($request->filled('album')) {
+            if ($request->album === 'none') {
+                $query->whereNull('album_id');
+            } else {
+                $query->where('album_id', $request->album);
+            }
+        }
+        
+        // Filter by privacy
+        if ($request->filled('privacy')) {
+            $query->where('privacy', $request->privacy);
+        }
+        
+        // Filter by published status
+        if ($request->filled('published')) {
+            if ($request->published === 'published') {
+                $query->where('is_published', true);
+            } elseif ($request->published === 'unpublished') {
+                $query->where('is_published', false);
+            }
+        }
+        
+        // Filter by date range
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+        
+        // Sorting
+        $sort = $request->get('sort', 'created_at');
+        $direction = $request->get('direction', 'desc');
+        
+        switch ($sort) {
+            case 'title':
+                $query->orderBy('title', $direction);
+                break;
+            case 'views':
+                $query->orderBy('views_count', $direction);
+                break;
+            case 'size':
+                $query->orderBy('size_bytes', $direction);
+                break;
+            default:
+                $query->orderBy('created_at', $direction);
+        }
+        
+        $images = $query->paginate(24)->withQueryString();
+        
+        // Get user's albums for filter dropdown
+        $albums = $user->albums()->select('id', 'title')->get();
+        
+        return Inertia::render('Images/Index', [
+            'images' => $images,
+            'albums' => $albums,
+            'filters' => $request->only(['search', 'album', 'privacy', 'published', 'date_from', 'date_to', 'sort', 'direction']),
+            'canUpload' => $user->hasRole('admin') || $user->hasRole('editor'),
+            'isMyImages' => true,
+        ]);
+    }
+
+    /**
+     * Enhanced bulk operations including move to album
      */
     public function bulkAction(Request $request)
     {
         $request->validate([
-            'action' => 'required|in:delete,publish,unpublish,privacy',
+            'action' => 'required|in:delete,publish,unpublish,privacy,move_to_album',
             'image_ids' => 'required|array',
             'image_ids.*' => 'exists:images,id',
-            'privacy_level' => 'required_if:action,privacy|in:public,unlisted,private'
+            'privacy_level' => 'required_if:action,privacy|in:public,unlisted,private',
+            'album_id' => 'required_if:action,move_to_album|nullable|exists:albums,id'
         ]);
 
         $imageIds = $request->image_ids;
@@ -124,6 +213,14 @@ class ImageController extends Controller
 
         if ($images->isEmpty()) {
             return back()->withErrors(['images' => 'No valid images selected.']);
+        }
+
+        // Verify album ownership if moving to album
+        if ($request->action === 'move_to_album' && $request->album_id) {
+            $album = Album::find($request->album_id);
+            if (!$album || ($album->owner_id !== $currentUser->id && !$currentUser->hasRole('admin'))) {
+                return back()->withErrors(['album_id' => 'Selected album not found or access denied.']);
+            }
         }
 
         $count = $images->count();
@@ -176,6 +273,20 @@ class ImageController extends Controller
                     ]);
                 });
                 $message = "{$count} images privacy updated successfully.";
+                break;
+
+            case 'move_to_album':
+                $images->each(function ($image) use ($request) {
+                    $this->authorize('update', $image);
+                    $image->update(['album_id' => $request->album_id]);
+                });
+                
+                if ($request->album_id) {
+                    $album = Album::find($request->album_id);
+                    $message = "{$count} images moved to album '{$album->title}' successfully.";
+                } else {
+                    $message = "{$count} images removed from albums successfully.";
+                }
                 break;
         }
 

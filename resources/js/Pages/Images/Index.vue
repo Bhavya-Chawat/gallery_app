@@ -52,6 +52,7 @@
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">All Albums</option>
+                  <option value="none">No Album</option>
                   <option v-for="album in albums" :key="album.id" :value="album.id">
                     {{ album.title }}
                   </option>
@@ -115,6 +116,7 @@
                 <option value="publish">Publish</option>
                 <option value="unpublish">Unpublish</option>
                 <option value="privacy">Change Privacy</option>
+                <option value="move_to_album">Move to Album</option>
                 <option value="delete" class="text-red-600">Delete</option>
               </select>
               
@@ -126,6 +128,17 @@
                 <option value="public">Public</option>
                 <option value="unlisted">Unlisted</option>
                 <option value="private">Private</option>
+              </select>
+
+              <select
+                v-if="bulkAction === 'move_to_album'"
+                v-model="selectedAlbumId"
+                class="text-sm border border-blue-300 rounded-md px-3 py-1 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Remove from Album</option>
+                <option v-for="album in albums" :key="album.id" :value="album.id">
+                  {{ album.title }}
+                </option>
               </select>
 
               <button
@@ -283,7 +296,7 @@
 
 <script setup>
 import { ref, reactive, computed } from 'vue'
-import { Head, Link, router, usePage, useForm } from '@inertiajs/vue3'
+import { Head, Link, router, usePage } from '@inertiajs/vue3'
 import route from 'ziggy-js'
 import { PlusIcon, PhotoIcon } from '@heroicons/vue/24/outline'
 
@@ -301,7 +314,7 @@ const props = defineProps({
   isMyImages: { type: Boolean, default: false },
 })
 
-// Reactive state
+// FIXED: Reactive state without conflicting parameters
 const searchForm = reactive({
   search: props.filters.search || '',
   album: props.filters.album || '',
@@ -311,8 +324,6 @@ const searchForm = reactive({
   date_to: props.filters.date_to || '',
   sort: props.filters.sort || 'created_at',
   direction: props.filters.direction || 'desc',
-  owner: props.isMyImages ? 'mine' : '',
-  show_all: props.isMyImages || false,
 })
 
 // Bulk operations (My Images only)
@@ -320,6 +331,7 @@ const selectedImages = ref([])
 const selectAll = ref(false)
 const bulkAction = ref('')
 const privacyLevel = ref('public')
+const selectedAlbumId = ref('')
 const bulkActionLoading = ref(false)
 
 // Lightbox
@@ -339,16 +351,17 @@ const pageDescription = computed(() => {
 
 const hasFilters = computed(() => {
   return Object.entries(searchForm).some(([key, value]) => 
-    value && value !== '' && !['sort', 'direction', 'owner', 'show_all'].includes(key)
+    value && value !== '' && !['sort', 'direction'].includes(key)
   )
 })
 
-// Methods
+// FIXED: Methods with proper route handling
 const search = () => {
   const cleanForm = Object.fromEntries(
     Object.entries(searchForm).filter(([key, value]) => value !== '')
   )
   
+  // FIXED: Use correct route based on context
   const routeName = props.isMyImages ? 'my.images' : 'gallery.index'
   
   router.get(route(routeName), cleanForm, {
@@ -359,7 +372,7 @@ const search = () => {
 
 const clearFilters = () => {
   Object.keys(searchForm).forEach(key => {
-    if (!['sort', 'direction', 'owner', 'show_all'].includes(key)) {
+    if (!['sort', 'direction'].includes(key)) {
       searchForm[key] = ''
     }
   })
@@ -410,6 +423,10 @@ const executeBulkAction = () => {
 
   if (bulkAction.value === 'privacy') {
     data.privacy_level = privacyLevel.value
+  }
+
+  if (bulkAction.value === 'move_to_album') {
+    data.album_id = selectedAlbumId.value
   }
 
   router.post(route('images.bulk'), data, {

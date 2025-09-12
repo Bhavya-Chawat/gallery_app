@@ -15,7 +15,7 @@ use Illuminate\Http\Request;
 
 /*
 |--------------------------------------------------------------------------
-| Web Routes
+| Web Routes - FIXED VERSION WITH PROPER ORDERING
 |--------------------------------------------------------------------------
 */
 
@@ -57,16 +57,16 @@ Route::get('/gallery', [ImageController::class, 'index'])->name('gallery.index')
 Route::get('/albums', [AlbumController::class, 'index'])->name('albums.index');
 Route::get('/collections', [CollectionController::class, 'index'])->name('collections.index');
 
-// Public viewing - IMPORTANT: This route now excludes 'create' to prevent conflicts
-Route::get('/albums/{album:slug}', [AlbumController::class, 'show'])
-    ->where('album', '^(?!create$).*')
-    ->name('albums.show');
-    
-Route::get('/collections/{collection:slug}', [CollectionController::class, 'show'])->name('collections.show');
-Route::get('/images/{image:slug}', [ImageController::class, 'show'])->name('images.show');
-
-// Image download
+// Image download (before image show route)
 Route::get('/images/{image:slug}/download', [ImageController::class, 'download'])->name('images.download');
+
+// Public viewing routes
+Route::get('/images/{image:slug}', [ImageController::class, 'show'])->name('images.show');
+Route::get('/collections/{collection:slug}', [CollectionController::class, 'show'])->name('collections.show');
+
+// FIXED: Albums routes - SPECIFIC ROUTES FIRST
+Route::get('/albums/create', [AlbumController::class, 'create'])->name('albums.create');
+Route::get('/albums/{album:slug}', [AlbumController::class, 'show'])->name('albums.show');
 
 // Search Routes
 Route::get('/search', function (Illuminate\Http\Request $request) {
@@ -83,7 +83,6 @@ Route::get('/search', function (Illuminate\Http\Request $request) {
         ]);
     }
 
-    // Fixed search queries
     $images = \App\Models\Image::whereIn('privacy', ['public', 'unlisted'])
         ->where('is_published', true)
         ->where(function ($q) use ($query) {
@@ -106,7 +105,6 @@ Route::get('/search', function (Illuminate\Http\Request $request) {
         ->take(8)
         ->get();
 
-    // Simplified collections search (if you have collections)
     try {
         $collections = \App\Models\Collection::whereIn('privacy', ['public', 'unlisted'])
             ->where('is_published', true)
@@ -158,21 +156,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // My Content Routes
-    Route::get('/my/images', function(Request $request) {
-        $request->merge(['owner' => 'mine', 'show_all' => true]);
-        return app(ImageController::class)->index($request);
-    })->name('my.images');
-
-    Route::get('/my/albums', function(Request $request) {
-        $request->merge(['owner' => 'mine', 'show_all' => true]);
-        $controller = app(AlbumController::class);
-        return $controller->index($request);
-    })->name('my.albums');
-
-    Route::get('/my/collections', [CollectionController::class, 'index'])
-        ->defaults('curator', 'mine')
-        ->name('my.collections');
+    // FIXED: My Content Routes - COMPLETELY SEPARATE FROM PUBLIC ROUTES
+    Route::prefix('my')->name('my.')->group(function () {
+        // My Images - dedicated route and controller method
+        Route::get('/images', [ImageController::class, 'myImages'])->name('images');
+        
+        // My Albums - dedicated route and controller method  
+        Route::get('/albums', [AlbumController::class, 'myAlbums'])->name('albums');
+        
+        // My Collections
+        Route::get('/collections', [CollectionController::class, 'myCollections'])->name('collections');
+    });
     
     // Image Management
     Route::get('/images/{image:slug}/edit', [ImageController::class, 'edit'])->name('images.edit');
@@ -181,20 +175,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/images/bulk', [ImageController::class, 'bulkAction'])->name('images.bulk');
     Route::post('/images/{image:slug}/toggle-publish', [ImageController::class, 'togglePublish'])->name('images.toggle-publish');
 
-    // Album Management - IMPORTANT: /albums/create is now first to prevent conflicts
-    Route::get('/albums/create', [AlbumController::class, 'create'])->name('albums.create');
+    // Album Management - THESE COME AFTER /albums/create
     Route::post('/albums', [AlbumController::class, 'store'])->name('albums.store');
-    Route::get('/albums/{album}/edit', [AlbumController::class, 'edit'])->name('albums.edit');
-    Route::patch('/albums/{album}', [AlbumController::class, 'update'])->name('albums.update');
-    Route::delete('/albums/{album}', [AlbumController::class, 'destroy'])->name('albums.destroy');
     Route::post('/albums/bulk', [AlbumController::class, 'bulkAction'])->name('albums.bulk');
     
-    // Album Image Management
+    // Album Image Management - SPECIFIC ROUTES
     Route::get('/albums/{album}/add-images', [AlbumController::class, 'addImagesForm'])->name('albums.add-images-form');
     Route::post('/albums/{album}/add-images', [AlbumController::class, 'addImages'])->name('albums.add-images');
     Route::delete('/albums/{album}/remove-images', [AlbumController::class, 'removeImages'])->name('albums.remove-images');
+    
+    // Album CRUD - These use ID not slug to avoid conflicts
+    Route::get('/albums/{album}/edit', [AlbumController::class, 'edit'])->name('albums.edit');
+    Route::patch('/albums/{album}', [AlbumController::class, 'update'])->name('albums.update');
+    Route::delete('/albums/{album}', [AlbumController::class, 'destroy'])->name('albums.destroy');
 
-    // Collection Management (if needed)
+    // Collection Management
     Route::resource('collections', CollectionController::class)->except(['index', 'show']);
     Route::post('/collections/{collection}/add-item', [CollectionController::class, 'addItem'])->name('collections.add-item');
     Route::delete('/collections/{collection}/remove-item', [CollectionController::class, 'removeItem'])->name('collections.remove-item');

@@ -410,4 +410,67 @@ class AlbumController extends Controller
         $count = count($request->image_ids);
         return back()->with('success', "{$count} images removed from album successfully.");
     }
+
+/**
+ * Display user's own albums with all statuses
+ */
+public function myAlbums(Request $request)
+{
+    $user = auth()->user();
+    
+    $query = Album::with(['owner', 'coverImage'])
+        ->withCount('images')
+        ->where('owner_id', $user->id);
+    
+    // Search
+    if ($request->filled('search')) {
+        $query->where(function ($q) use ($request) {
+            $q->where('title', 'like', '%' . $request->search . '%')
+              ->orWhere('description', 'like', '%' . $request->search . '%');
+        });
+    }
+    
+    // Filter by privacy
+    if ($request->filled('privacy')) {
+        $query->where('privacy', $request->privacy);
+    }
+    
+    // Filter by published status
+    if ($request->filled('published')) {
+        if ($request->published === 'published') {
+            $query->where('is_published', true);
+        } elseif ($request->published === 'unpublished') {
+            $query->where('is_published', false);
+        }
+    }
+    
+    // Sorting
+    $sort = $request->get('sort', 'updated_at');
+    $direction = $request->get('direction', 'desc');
+    
+    switch ($sort) {
+        case 'title':
+            $query->orderBy('title', $direction);
+            break;
+        case 'created_at':
+            $query->orderBy('created_at', $direction);
+            break;
+        case 'images_count':
+            $query->orderBy('images_count', $direction);
+            break;
+        default:
+            $query->orderBy('updated_at', $direction);
+    }
+    
+    $albums = $query->paginate(12)->withQueryString();
+    
+    return Inertia::render('Albums/Index', [
+        'albums' => $albums,
+        'filters' => $request->only(['search', 'privacy', 'published', 'sort', 'direction']),
+        'canCreate' => $user->hasRole('admin') || $user->hasRole('editor'),
+        'isMyAlbums' => true,
+    ]);
+}
+
+
 }

@@ -151,7 +151,7 @@
           <div
             v-for="album in albums.data"
             :key="album.id"
-            class="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+            class="relative bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow"
           >
             <!-- Selection Checkbox (My Albums only) -->
             <div v-if="isMyAlbums" class="absolute top-4 left-4 z-10">
@@ -174,13 +174,6 @@
                 }"
               >
                 {{ album.privacy }}
-              </span>
-            </div>
-
-            <!-- Published Status Badge (My Albums only) -->
-            <div v-if="isMyAlbums && !album.is_published" class="absolute bottom-16 left-4 z-10">
-              <span class="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded">
-                Draft
               </span>
             </div>
 
@@ -215,6 +208,14 @@
                   <p v-if="album.description" class="text-sm text-gray-500 mt-1 line-clamp-2">
                     {{ album.description }}
                   </p>
+                  
+                  <!-- Published Status Badge (My Albums only) -->
+                  <div v-if="isMyAlbums && !album.is_published" class="mt-2">
+                    <span class="inline-flex px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded">
+                      Draft
+                    </span>
+                  </div>
+                  
                   <div class="flex items-center mt-2 text-xs text-gray-400">
                     <span>{{ formatDate(album.updated_at) }}</span>
                     <span class="mx-2">•</span>
@@ -310,15 +311,13 @@ const props = defineProps({
   isMyAlbums: { type: Boolean, default: false },
 })
 
-// Reactive state
+// FIXED: Reactive state without conflicting parameters
 const searchForm = reactive({
   search: props.filters.search || '',
   privacy: props.filters.privacy || '',
   published: props.filters.published || '',
   sort: props.filters.sort || 'updated_at',
   direction: props.filters.direction || 'desc',
-  owner: props.isMyAlbums ? 'mine' : '',
-  show_all: props.isMyAlbums || false,
 })
 
 // Bulk operations (My Albums only)
@@ -341,18 +340,20 @@ const pageDescription = computed(() => {
 
 const hasFilters = computed(() => {
   return Object.entries(searchForm).some(([key, value]) => 
-    value && value !== '' && !['sort', 'direction', 'owner', 'show_all'].includes(key)
+    value && value !== '' && !['sort', 'direction'].includes(key)
   )
 })
 
-// Methods
+// FIXED: Methods with proper route handling
 const search = () => {
   const cleanForm = Object.fromEntries(
     Object.entries(searchForm).filter(([key, value]) => value !== '')
   )
   
-  // Stay on current route - don't redirect
-  router.get(window.location.pathname, cleanForm, {
+  // FIXED: Use correct route based on context
+  const routeName = props.isMyAlbums ? 'my.albums' : 'albums.index'
+  
+  router.get(route(routeName), cleanForm, {
     preserveState: true,
     replace: true,
   })
@@ -360,7 +361,7 @@ const search = () => {
 
 const clearFilters = () => {
   Object.keys(searchForm).forEach(key => {
-    if (!['sort', 'direction', 'owner', 'show_all'].includes(key)) {
+    if (!['sort', 'direction'].includes(key)) {
       searchForm[key] = ''
     }
   })
