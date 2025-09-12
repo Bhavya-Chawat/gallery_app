@@ -1,3 +1,4 @@
+
 <template>
   <AppLayout>
     <Head title="Dashboard" />
@@ -97,7 +98,7 @@
             :href="route('admin.system.index')"
           />
         </div>
-
+        
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <!-- Recent Images -->
           <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
@@ -316,6 +317,8 @@ import {
 import AppLayout from '@/Layouts/AppLayout.vue'
 import StorageUsageCard from '@/Components/StorageUsageCard.vue'
 import StatCard from '@/Components/StatCard.vue'
+import ImageCard from '@/Components/Gallery/ImageCard.vue'
+
 // import Modal from '@/Components/Modal.vue';
 // import PrimaryButton from '@/Components/PrimaryButton.vue';
 // import SecondaryButton from '@/Components/SecondaryButton.vue';
@@ -381,12 +384,13 @@ const formatTimeAgo = (date) => {
 }
 
 const getImageUrl = (image, variant = 'medium') => {
-  if (image.versions) {
-    const version = image.versions.find(v => v.variant === variant)
-    if (version) return version.url
+  // Direct MinIO URL since thumbnails aren't processed yet
+  if (image.storage_path) {
+    return `http://localhost:9000/gallery-images/${image.storage_path}`
   }
-  return image.url || image.storage_path
+  return '/images/placeholder.jpg'
 }
+
 
 const getActivityIcon = (type) => {
   const icons = {

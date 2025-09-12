@@ -26,6 +26,24 @@
       >
     </div>
 
+<!-- Privacy Badge -->
+<div v-if="image.privacy" class="absolute top-2 right-2 z-10">
+  <span
+    v-if="image.privacy === 'private'"
+    class="inline-flex items-center px-2 py-1 rounded text-xs font-semibold bg-red-100 text-red-700"
+  >Private</span>
+  <span
+    v-else-if="image.privacy === 'unlisted'"
+    class="inline-flex items-center px-2 py-1 rounded text-xs font-semibold bg-yellow-100 text-yellow-800"
+  >Unlisted</span>
+  <span
+    v-else
+    class="inline-flex items-center px-2 py-1 rounded text-xs font-semibold bg-green-100 text-green-800"
+  >Public</span>
+</div>
+
+
+
     <!-- Overlay - NO CLICK HANDLER HERE -->
     <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-end pointer-events-none">
       <div class="w-full p-4 text-white transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">

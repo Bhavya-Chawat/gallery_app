@@ -38,11 +38,6 @@
                     Collections
                   </Link>
                 </li>
-                <li>
-                  <Link :href="route('tags.index')" class="text-base text-gray-500 hover:text-gray-900">
-                    Tags
-                  </Link>
-                </li>
               </ul>
             </div>
             <div class="mt-12 md:mt-0">

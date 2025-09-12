@@ -11,28 +11,24 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use Illuminate\Http\Request;
 
 /*
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| contains the "web" middleware group. Now create something great!
-|
 */
 
 // Public routes
 Route::get('/', function () {
-    $featuredImages = \App\Models\Image::public()
+    $featuredImages = \App\Models\Image::whereIn('privacy', ['public', 'unlisted'])
         ->where('is_published', true)
         ->orderBy('views_count', 'desc')
         ->take(8)
         ->with('owner')
         ->get();
 
-    $featuredAlbums = \App\Models\Album::public()
+    $featuredAlbums = \App\Models\Album::whereIn('privacy', ['public', 'unlisted'])
         ->where('is_published', true)
         ->orderBy('updated_at', 'desc')
         ->take(6)
@@ -40,8 +36,8 @@ Route::get('/', function () {
         ->get();
 
     $stats = [
-        'total_images' => \App\Models\Image::public()->where('is_published', true)->count(),
-        'total_albums' => \App\Models\Album::public()->where('is_published', true)->count(),
+        'total_images' => \App\Models\Image::whereIn('privacy', ['public', 'unlisted'])->where('is_published', true)->count(),
+        'total_albums' => \App\Models\Album::whereIn('privacy', ['public', 'unlisted'])->where('is_published', true)->count(),
         'total_users' => \App\Models\User::where('is_active', true)->count(),
     ];
 
@@ -61,158 +57,16 @@ Route::get('/gallery', [ImageController::class, 'index'])->name('gallery.index')
 Route::get('/albums', [AlbumController::class, 'index'])->name('albums.index');
 Route::get('/collections', [CollectionController::class, 'index'])->name('collections.index');
 
-// Public album and image viewing
-// Add constraints so wildcard slug doesn't eat reserved paths like "create" or action endpoints
+// Public viewing - IMPORTANT: This route now excludes 'create' to prevent conflicts
 Route::get('/albums/{album:slug}', [AlbumController::class, 'show'])
-    ->where('album', '^(?!create$|edit$|reorder$|add-images$|remove-images$|toggle-publish$).+')
+    ->where('album', '^(?!create$).*')
     ->name('albums.show');
-Route::get('/collections/{collection:slug}', [CollectionController::class, 'show'])
-    ->where('collection', '^(?!create$|edit$|add-item$|remove-item$|reorder$|toggle-publish$).+')
-    ->name('collections.show');
+    
+Route::get('/collections/{collection:slug}', [CollectionController::class, 'show'])->name('collections.show');
 Route::get('/images/{image:slug}', [ImageController::class, 'show'])->name('images.show');
 
 // Image download
-Route::get('/images/{image:slug}/download', [ImageController::class, 'download'])
-    ->name('images.download');
-
-// Authentication routes (Breeze)
-require __DIR__.'/auth.php';
-
-// Authenticated routes
-Route::middleware(['auth', 'verified'])->group(function () {
-    
-    // Dashboard
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-
-    // Profile Management
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-
-    // Image Management
-    Route::get('/my/images', [ImageController::class, 'index'])
-        ->defaults('owner', 'mine')
-        ->name('my.images');
-    
-    Route::get('/images/{image:slug}/edit', [ImageController::class, 'edit'])
-        ->name('images.edit');
-    Route::patch('/images/{image:slug}', [ImageController::class, 'update'])
-        ->name('images.update');
-    Route::delete('/images/{image:slug}', [ImageController::class, 'destroy'])
-        ->name('images.destroy');
-
-    // Image interactions
-    Route::post('/images/{image:slug}/like', [ImageController::class, 'toggleLike'])
-        ->name('images.like');
-    Route::post('/images/{image:slug}/toggle-publish', [ImageController::class, 'togglePublish'])
-        ->name('images.toggle-publish');
-
-    // Album Management
-    Route::get('/my/albums', [AlbumController::class, 'index'])
-        ->defaults('owner', 'mine')
-        ->name('my.albums');
-    
-    Route::resource('albums', AlbumController::class)->except(['index', 'show']);
-    
-    // Album specific actions
-    Route::post('/albums/{album}/reorder', [AlbumController::class, 'reorder'])
-        ->name('albums.reorder');
-    Route::post('/albums/{album}/add-images', [AlbumController::class, 'addImages'])
-        ->name('albums.add-images');
-    Route::delete('/albums/{album}/remove-images', [AlbumController::class, 'removeImages'])
-        ->name('albums.remove-images');
-    Route::post('/albums/{album}/toggle-publish', [AlbumController::class, 'togglePublish'])
-        ->name('albums.toggle-publish');
-
-    // Collection Management
-    Route::get('/my/collections', [CollectionController::class, 'index'])
-        ->defaults('curator', 'mine')
-        ->name('my.collections');
-    
-    Route::resource('collections', CollectionController::class)->except(['index', 'show']);
-    
-    // Collection specific actions
-    Route::post('/collections/{collection}/add-item', [CollectionController::class, 'addItem'])
-        ->name('collections.add-item');
-    Route::delete('/collections/{collection}/remove-item', [CollectionController::class, 'removeItem'])
-        ->name('collections.remove-item');
-    Route::post('/collections/{collection}/reorder', [CollectionController::class, 'reorderItems'])
-        ->name('collections.reorder');
-    Route::post('/collections/{collection}/toggle-publish', [CollectionController::class, 'togglePublish'])
-        ->name('collections.toggle-publish');
-
-    // Upload Routes
-Route::get('/upload', function () {
-    $user = auth()->user();
-    
-    if (!$user->can('create', App\Models\Image::class)) {
-        return redirect('/dashboard')->with('upload_request_needed', true);
-    }
-    
-    return Inertia::render('Images/Upload', [
-        'albums' => $user->albums()->select('id', 'title')->get(),
-        'maxUploadSize' => config('filesystems.gallery.max_upload_size', 52428800),
-        'allowedMimes' => implode(',', config('filesystems.gallery.allowed_extensions', ['jpg','jpeg','png','webp','avif'])),
-        'allowedExtensions' => implode(',', config('filesystems.gallery.allowed_extensions', ['jpg','jpeg','png','webp','avif'])),
-        'defaultPrivacy' => config('filesystems.gallery.default_privacy', 'unlisted'),
-        'storageUsage' => [
-            'used' => $user->storage_used_bytes,
-            'quota' => $user->storage_quota_bytes,
-            'percentage' => $user->getStorageUsagePercentage(),
-            'remaining' => $user->getRemainingStorageBytes(),
-        ],
-    ]);
-})->name('upload');
-
-
-    // Handle direct uploads from the Upload page (maps to existing API logic)
-    Route::post('/upload', [\App\Http\Controllers\Api\UploadController::class, 'direct'])
-        ->name('upload.store');
-});
-
-Route::post('/request-editor-access', function () {
-    $user = auth()->user();
-    \Log::info("User {$user->name} ({$user->email}) requested editor access");
-    return redirect('/dashboard')->with('success', 'Request sent to administrators');
-})->name('request-editor-access')->middleware('auth');
-
-
-// Admin Routes
-Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    
-    // User Management
-    Route::resource('users', UserController::class);
-    Route::post('/users/{user}/assign-role', [UserController::class, 'assignRole'])
-        ->name('users.assign-role');
-    Route::post('/users/{user}/toggle-active', [UserController::class, 'toggleActive'])
-        ->name('users.toggle-active');
-    Route::post('/users/{user}/reset-storage', [UserController::class, 'resetStorage'])
-        ->name('users.reset-storage');
-
-    // System Management
-    Route::get('/system', [SystemController::class, 'index'])->name('system.index');
-    Route::get('/system/analytics', [SystemController::class, 'analytics'])->name('system.analytics');
-    Route::get('/system/settings', [SystemController::class, 'settings'])->name('system.settings');
-    Route::post('/system/settings', [SystemController::class, 'updateSettings'])->name('system.update-settings');
-    Route::post('/system/clear-cache', [SystemController::class, 'clearCache'])->name('system.clear-cache');
-    Route::post('/system/maintenance', [SystemController::class, 'maintenance'])->name('system.maintenance');
-    Route::get('/system/export/{type}', [SystemController::class, 'export'])->name('system.export');
-
-    // Moderation
-    Route::get('/moderation', [ModerationController::class, 'index'])->name('moderation.index');
-    Route::get('/moderation/comments', [ModerationController::class, 'comments'])->name('moderation.comments');
-    Route::get('/moderation/reports', [ModerationController::class, 'reports'])->name('moderation.reports');
-    
-    // Comment moderation actions
-    Route::post('/comments/{comment}/approve', [ModerationController::class, 'approveComment'])
-        ->name('comments.approve');
-    Route::post('/comments/{comment}/reject', [ModerationController::class, 'rejectComment'])
-        ->name('comments.reject');
-    Route::post('/comments/{comment}/spam', [ModerationController::class, 'markSpam'])
-        ->name('comments.spam');
-    Route::post('/comments/bulk-moderate', [ModerationController::class, 'bulkModerate'])
-        ->name('comments.bulk-moderate');
-});
+Route::get('/images/{image:slug}/download', [ImageController::class, 'download'])->name('images.download');
 
 // Search Routes
 Route::get('/search', function (Illuminate\Http\Request $request) {
@@ -229,7 +83,9 @@ Route::get('/search', function (Illuminate\Http\Request $request) {
         ]);
     }
 
-    $images = \App\Models\Image::visible()
+    // Fixed search queries
+    $images = \App\Models\Image::whereIn('privacy', ['public', 'unlisted'])
+        ->where('is_published', true)
         ->where(function ($q) use ($query) {
             $q->where('title', 'like', "%{$query}%")
               ->orWhere('caption', 'like', "%{$query}%")
@@ -239,7 +95,8 @@ Route::get('/search', function (Illuminate\Http\Request $request) {
         ->take(12)
         ->get();
 
-    $albums = \App\Models\Album::visible()
+    $albums = \App\Models\Album::whereIn('privacy', ['public', 'unlisted'])
+        ->where('is_published', true)
         ->where(function ($q) use ($query) {
             $q->where('title', 'like', "%{$query}%")
               ->orWhere('description', 'like', "%{$query}%");
@@ -249,15 +106,20 @@ Route::get('/search', function (Illuminate\Http\Request $request) {
         ->take(8)
         ->get();
 
-    $collections = \App\Models\Collection::visible()
-        ->where(function ($q) use ($query) {
-            $q->where('title', 'like', "%{$query}%")
-              ->orWhere('description', 'like', "%{$query}%");
-        })
-        ->with(['curator'])
-        ->withCount('items')
-        ->take(6)
-        ->get();
+    // Simplified collections search (if you have collections)
+    try {
+        $collections = \App\Models\Collection::whereIn('privacy', ['public', 'unlisted'])
+            ->where('is_published', true)
+            ->where(function ($q) use ($query) {
+                $q->where('title', 'like', "%{$query}%")
+                  ->orWhere('description', 'like', "%{$query}%");
+            })
+            ->with(['curator'])
+            ->take(6)
+            ->get();
+    } catch (\Exception $e) {
+        $collections = collect([]);
+    }
 
     return Inertia::render('Search', [
         'query' => $query,
@@ -269,33 +131,11 @@ Route::get('/search', function (Illuminate\Http\Request $request) {
     ]);
 })->name('search');
 
-// Tag browsing
-Route::get('/tags', function () {
-    $tags = \App\Models\Tag::popular(1)
-        ->take(50)
-        ->get();
+// Comment routes
+Route::post('/images/{image:slug}/comments', [\App\Http\Controllers\CommentController::class, 'store'])->name('images.comments.store');
+Route::delete('/comments/{comment}', [\App\Http\Controllers\CommentController::class, 'destroy'])->name('comments.destroy');
 
-    return Inertia::render('Tags/Index', [
-        'tags' => $tags,
-    ]);
-})->name('tags.index');
-
-Route::get('/tags/{tag:slug}', function (\App\Models\Tag $tag, Illuminate\Http\Request $request) {
-    $images = \App\Models\Image::visible()
-        ->whereHas('tags', function ($q) use ($tag) {
-            $q->where('tag_id', $tag->id);
-        })
-        ->with(['owner', 'album', 'tags'])
-        ->orderBy('created_at', 'desc')
-        ->paginate(24);
-
-    return Inertia::render('Tags/Show', [
-        'tag' => $tag,
-        'images' => $images,
-    ]);
-})->name('tags.show');
-
-// Privacy Policy & Terms (if needed)
+// Legal pages
 Route::get('/privacy', function () {
     return Inertia::render('Legal/Privacy');
 })->name('privacy');
@@ -303,3 +143,117 @@ Route::get('/privacy', function () {
 Route::get('/terms', function () {
     return Inertia::render('Legal/Terms');
 })->name('terms');
+
+// Authentication routes
+require __DIR__.'/auth.php';
+
+// Authenticated routes
+Route::middleware(['auth', 'verified'])->group(function () {
+    
+    // Dashboard
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Profile Management
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // My Content Routes
+    Route::get('/my/images', function(Request $request) {
+        $request->merge(['owner' => 'mine', 'show_all' => true]);
+        return app(ImageController::class)->index($request);
+    })->name('my.images');
+
+    Route::get('/my/albums', function(Request $request) {
+        $request->merge(['owner' => 'mine', 'show_all' => true]);
+        $controller = app(AlbumController::class);
+        return $controller->index($request);
+    })->name('my.albums');
+
+    Route::get('/my/collections', [CollectionController::class, 'index'])
+        ->defaults('curator', 'mine')
+        ->name('my.collections');
+    
+    // Image Management
+    Route::get('/images/{image:slug}/edit', [ImageController::class, 'edit'])->name('images.edit');
+    Route::patch('/images/{image:slug}', [ImageController::class, 'update'])->name('images.update');
+    Route::delete('/images/{image:slug}', [ImageController::class, 'destroy'])->name('images.destroy');
+    Route::post('/images/bulk', [ImageController::class, 'bulkAction'])->name('images.bulk');
+    Route::post('/images/{image:slug}/toggle-publish', [ImageController::class, 'togglePublish'])->name('images.toggle-publish');
+
+    // Album Management - IMPORTANT: /albums/create is now first to prevent conflicts
+    Route::get('/albums/create', [AlbumController::class, 'create'])->name('albums.create');
+    Route::post('/albums', [AlbumController::class, 'store'])->name('albums.store');
+    Route::get('/albums/{album}/edit', [AlbumController::class, 'edit'])->name('albums.edit');
+    Route::patch('/albums/{album}', [AlbumController::class, 'update'])->name('albums.update');
+    Route::delete('/albums/{album}', [AlbumController::class, 'destroy'])->name('albums.destroy');
+    Route::post('/albums/bulk', [AlbumController::class, 'bulkAction'])->name('albums.bulk');
+    
+    // Album Image Management
+    Route::get('/albums/{album}/add-images', [AlbumController::class, 'addImagesForm'])->name('albums.add-images-form');
+    Route::post('/albums/{album}/add-images', [AlbumController::class, 'addImages'])->name('albums.add-images');
+    Route::delete('/albums/{album}/remove-images', [AlbumController::class, 'removeImages'])->name('albums.remove-images');
+
+    // Collection Management (if needed)
+    Route::resource('collections', CollectionController::class)->except(['index', 'show']);
+    Route::post('/collections/{collection}/add-item', [CollectionController::class, 'addItem'])->name('collections.add-item');
+    Route::delete('/collections/{collection}/remove-item', [CollectionController::class, 'removeItem'])->name('collections.remove-item');
+    Route::post('/collections/{collection}/reorder', [CollectionController::class, 'reorderItems'])->name('collections.reorder');
+    Route::post('/collections/{collection}/toggle-publish', [CollectionController::class, 'togglePublish'])->name('collections.toggle-publish');
+
+    // Upload Routes
+    Route::get('/upload', function () {
+        $user = auth()->user();
+        
+        if (!$user->can('create', App\Models\Image::class)) {
+            return redirect('/dashboard')->with('upload_request_needed', true);
+        }
+        
+        return Inertia::render('Images/Upload', [
+            'albums' => $user->albums()->select('id', 'title')->get(),
+            'maxUploadSize' => config('filesystems.gallery.max_upload_size', 52428800),
+            'allowedMimes' => implode(',', config('filesystems.gallery.allowed_extensions', ['jpg','jpeg','png','webp','avif'])),
+            'allowedExtensions' => implode(',', config('filesystems.gallery.allowed_extensions', ['jpg','jpeg','png','webp','avif'])),
+            'defaultPrivacy' => config('filesystems.gallery.default_privacy', 'unlisted'),
+            'storageUsage' => [
+                'used' => $user->storage_used_bytes ?? 0,
+                'quota' => $user->storage_quota_bytes ?? 0,
+                'percentage' => $user->getStorageUsagePercentage(),
+                'remaining' => $user->getRemainingStorageBytes(),
+            ],
+        ]);
+    })->name('upload');
+
+    Route::post('/upload', [\App\Http\Controllers\Api\UploadController::class, 'direct'])->name('upload.store');
+
+    // Request editor access
+    Route::post('/request-editor-access', function () {
+        $user = auth()->user();
+        \Log::info("User {$user->name} ({$user->email}) requested editor access");
+        return redirect('/dashboard')->with('success', 'Request sent to administrators');
+    })->name('request-editor-access');
+});
+
+// Admin Routes
+Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::resource('users', UserController::class);
+    Route::post('/users/{user}/assign-role', [UserController::class, 'assignRole'])->name('users.assign-role');
+    Route::post('/users/{user}/toggle-active', [UserController::class, 'toggleActive'])->name('users.toggle-active');
+    Route::post('/users/{user}/reset-storage', [UserController::class, 'resetStorage'])->name('users.reset-storage');
+
+    Route::get('/system', [SystemController::class, 'index'])->name('system.index');
+    Route::get('/system/analytics', [SystemController::class, 'analytics'])->name('system.analytics');
+    Route::get('/system/settings', [SystemController::class, 'settings'])->name('system.settings');
+    Route::post('/system/settings', [SystemController::class, 'updateSettings'])->name('system.update-settings');
+    Route::post('/system/clear-cache', [SystemController::class, 'clearCache'])->name('system.clear-cache');
+    Route::post('/system/maintenance', [SystemController::class, 'maintenance'])->name('system.maintenance');
+    Route::get('/system/export/{type}', [SystemController::class, 'export'])->name('system.export');
+
+    Route::get('/moderation', [ModerationController::class, 'index'])->name('moderation.index');
+    Route::get('/moderation/comments', [ModerationController::class, 'comments'])->name('moderation.comments');
+    Route::get('/moderation/reports', [ModerationController::class, 'reports'])->name('moderation.reports');
+    Route::post('/comments/{comment}/approve', [ModerationController::class, 'approveComment'])->name('comments.approve');
+    Route::post('/comments/{comment}/reject', [ModerationController::class, 'rejectComment'])->name('comments.reject');
+    Route::post('/comments/{comment}/spam', [ModerationController::class, 'markSpam'])->name('comments.spam');
+    Route::post('/comments/bulk-moderate', [ModerationController::class, 'bulkModerate'])->name('comments.bulk-moderate');
+});

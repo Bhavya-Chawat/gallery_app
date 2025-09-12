@@ -168,13 +168,15 @@ class Image extends Model
         return Storage::disk('minio')->url($this->storage_path);
     }
 
-    public function getSignedUrl(string $variant = 'original', int $ttl = 300): string
+    public function getSignedUrl(string $variant = "original", int $ttl = 300): string
     {
-        $path = $variant === 'original' 
+        $path = $variant === "original" 
             ? $this->storage_path 
-            : $this->versions()->where('variant', $variant)->first()?->storage_path ?? $this->storage_path;
-
-        return Storage::disk('minio')->temporaryUrl($path, now()->addSeconds($ttl));
+            : $this->versions()->where("variant", $variant)->first()?->storage_path ?? $this->storage_path;
+        
+        // Get signed URL and fix internal Docker hostname
+        $url = Storage::disk("minio")->temporaryUrl($path, now()->addSeconds($ttl));
+        return str_replace("minio:9000", "localhost:9000", $url);
     }
 
     // Status Methods

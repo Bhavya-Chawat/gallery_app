@@ -31,22 +31,22 @@
           <form @submit.prevent="submit" class="p-6 space-y-6">
             <!-- Title -->
             <div>
-              <InputLabel for="title" value="Album Title" required />
-              <TextInput
+              <label for="title" class="block text-sm font-medium text-gray-700">Album Title *</label>
+              <input
                 id="title"
                 v-model="form.title"
                 type="text"
-                class="mt-1 block w-full"
-                placeholder="Enter album title"
                 required
                 autofocus
+                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                placeholder="Enter album title"
               />
-              <InputError class="mt-2" :message="form.errors.title" />
+              <div v-if="form.errors.title" class="mt-2 text-sm text-red-600">{{ form.errors.title }}</div>
             </div>
 
             <!-- Description -->
             <div>
-              <InputLabel for="description" value="Description" />
+              <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
               <textarea
                 id="description"
                 v-model="form.description"
@@ -54,23 +54,23 @@
                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 placeholder="Describe your album (optional)"
               ></textarea>
-              <InputError class="mt-2" :message="form.errors.description" />
+              <div v-if="form.errors.description" class="mt-2 text-sm text-red-600">{{ form.errors.description }}</div>
             </div>
 
             <!-- Privacy -->
             <div>
-              <InputLabel for="privacy" value="Privacy" required />
+              <label for="privacy" class="block text-sm font-medium text-gray-700">Privacy *</label>
               <select
                 id="privacy"
                 v-model="form.privacy"
-                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 required
+                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
               >
                 <option value="public">Public - Anyone can view</option>
                 <option value="unlisted">Unlisted - Only accessible via direct link</option>
                 <option value="private">Private - Only you can view</option>
               </select>
-              <InputError class="mt-2" :message="form.errors.privacy" />
+              <div v-if="form.errors.privacy" class="mt-2 text-sm text-red-600">{{ form.errors.privacy }}</div>
               
               <div class="mt-2 text-sm text-gray-500">
                 <div v-if="form.privacy === 'public'" class="flex items-center">
@@ -97,10 +97,15 @@
                 Cancel
               </Link>
               
-              <PrimaryButton :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
+              <button
+                type="submit"
+                :disabled="form.processing"
+                class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
+                :class="{ 'opacity-25': form.processing }"
+              >
                 <span v-if="form.processing">Creating...</span>
                 <span v-else>Create Album</span>
-              </PrimaryButton>
+              </button>
             </div>
           </form>
         </div>
@@ -120,10 +125,6 @@ import {
 } from '@heroicons/vue/24/outline'
 
 import AppLayout from '@/Layouts/AppLayout.vue'
-import InputError from '@/Components/InputError.vue'
-import InputLabel from '@/Components/InputLabel.vue'
-import PrimaryButton from '@/Components/PrimaryButton.vue'
-import TextInput from '@/Components/TextInput.vue'
 
 const form = useForm({
   title: '',

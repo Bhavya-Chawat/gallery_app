@@ -6,7 +6,6 @@ use App\Models\Album;
 use App\Models\Comment;
 use App\Models\Image;
 use App\Models\User;
-use App\Models\ViewCount;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -23,61 +22,55 @@ class DashboardController extends Controller
         // Common data for all users
         $data = [
             'user' => $user,
-            'storageUsed' => $user->storage_used_bytes,
-            'storageQuota' => $user->storage_quota_bytes,
+            'storageUsed' => $user->storage_used_bytes ?? 0,
+            'storageQuota' => $user->storage_quota_bytes ?? 0,
             'storageUsagePercentage' => $user->getStorageUsagePercentage(),
         ];
 
         // Role-specific data
         if ($user->hasRole('admin')) {
-            $data = array_merge($data, $this->getAdminDashboardData());
+            $data = array_merge($data, $this->getAdminDashboardData($user));
         } elseif ($user->hasRole('editor')) {
             $data = array_merge($data, $this->getEditorDashboardData($user));
         } else {
             $data = array_merge($data, $this->getVisitorDashboardData($user));
         }
 
-        $data['auth'] = [
-            'user' => $user,
-            'roles' => method_exists($user, 'roles') ? $user->roles : [],
-        ];
-        $data['errors'] = session('errors') ?? [];
-        return Inertia::render('Dashboard', [
-          $data,
-         'upload_request_needed' => session('upload_request_needed', false),]);
+        return Inertia::render('Dashboard', array_merge($data, [
+            'upload_request_needed' => session('upload_request_needed', false),
+        ]));
     }
 
     /**
      * Get admin-specific dashboard data.
      */
-    private function getAdminDashboardData(): array
+    private function getAdminDashboardData(User $user): array
     {
         return [
             'stats' => [
-                'totalUsers' => User::count(),
-                'activeUsers' => User::where('is_active', true)->count(),
-                'totalImages' => Image::count(),
-                'publishedImages' => Image::where('is_published', true)->count(),
-                'totalAlbums' => Album::count(),
-                'publishedAlbums' => Album::where('is_published', true)->count(),
-                'pendingComments' => Comment::where('status', 'pending')->count(),
-                'totalStorage' => Image::sum('size_bytes'),
-                'todayUploads' => Image::whereDate('created_at', today())->count(),
-                'weeklyViews' => ViewCount::thisWeek()->sum('count'),
+                // Personal stats for admin
+                'myImages' => $user->images()->count(),
+                'myAlbums' => $user->albums()->count(),
+                'totalViews' => $user->images()->sum('views_count'),
+                'totalLikes' => $user->images()->sum('likes_count'),
+                
+                // System-wide stats
+                'totalUsers' => User::where('is_active', true)->count(),
+                'totalImages' => Image::whereIn('privacy', ['public', 'unlisted'])->where('is_published', true)->count(),
+                'totalAlbums' => Album::whereIn('privacy', ['public', 'unlisted'])->where('is_published', true)->count(),
+                'pendingComments' => 0, // Simplified for now
             ],
+            'recentImages' => $user->images()
+                ->orderBy('created_at', 'desc')
+                ->take(8)
+                ->get(),
+            'recentAlbums' => $user->albums()
+                ->orderBy('updated_at', 'desc')
+                ->take(6)
+                ->withCount('images')
+                ->get(),
             'recentActivities' => $this->getRecentActivities(),
             'systemStatus' => $this->getSystemStatus(),
-            'topImages' => Image::published()
-                ->visible()
-                ->orderBy('views_count', 'desc')
-                ->take(5)
-                ->with('owner')
-                ->get(),
-            'recentUsers' => User::active()
-                ->orderBy('created_at', 'desc')
-                ->take(5)
-                ->with('roles')
-                ->get(),
         ];
     }
 
@@ -89,37 +82,21 @@ class DashboardController extends Controller
         return [
             'stats' => [
                 'myImages' => $user->images()->count(),
-                'publishedImages' => $user->images()->where('is_published', true)->count(),
                 'myAlbums' => $user->albums()->count(),
                 'totalViews' => $user->images()->sum('views_count'),
                 'totalLikes' => $user->images()->sum('likes_count'),
-                'thisMonthUploads' => $user->images()
-                    ->whereMonth('created_at', now()->month)
-                    ->count(),
             ],
             'recentImages' => $user->images()
                 ->orderBy('created_at', 'desc')
                 ->take(8)
-                ->with(['album', 'tags'])
                 ->get(),
             'recentAlbums' => $user->albums()
                 ->orderBy('updated_at', 'desc')
                 ->take(6)
                 ->withCount('images')
                 ->get(),
-            'popularImages' => $user->images()
-                ->published()
-                ->orderBy('views_count', 'desc')
-                ->take(5)
-                ->get(),
-            'recentComments' => Comment::whereHas('image', function ($query) use ($user) {
-                    $query->where('owner_id', $user->id);
-                })
-                ->approved()
-                ->with(['user', 'image'])
-                ->orderBy('created_at', 'desc')
-                ->take(5)
-                ->get(),
+            'recentActivities' => [],
+            'systemStatus' => [],
         ];
     }
 
@@ -130,36 +107,22 @@ class DashboardController extends Controller
     {
         return [
             'stats' => [
-                'likedImages' => $user->likes()->where('likeable_type', Image::class)->count(),
-                'comments' => $user->comments()->approved()->count(),
-                'favoriteAlbums' => 0, // Placeholder for future feature
+                'myImages' => $user->images()->count(),
+                'myAlbums' => $user->albums()->count(),
+                'totalViews' => $user->images()->sum('views_count'),
+                'totalLikes' => $user->images()->sum('likes_count'),
             ],
-            'recentlyLiked' => Image::whereHas('likes', function ($query) use ($user) {
-                    $query->where('user_id', $user->id);
-                })
-                ->with(['owner', 'likes' => function ($query) use ($user) {
-                    $query->where('user_id', $user->id);
-                }])
+            'recentImages' => $user->images()
+                ->orderBy('created_at', 'desc')
                 ->take(8)
                 ->get(),
-            'featuredImages' => Image::public()
-                ->where('is_published', true)
-                ->orderBy('views_count', 'desc')
-                ->take(8)
-                ->with('owner')
-                ->get(),
-            'recentComments' => $user->comments()
-                ->approved()
-                ->with('image')
-                ->orderBy('created_at', 'desc')
-                ->take(5)
-                ->get(),
-            'recommendedAlbums' => Album::public()
-                ->where('is_published', true)
-                ->orderBy('created_at', 'desc')
+            'recentAlbums' => $user->albums()
+                ->orderBy('updated_at', 'desc')
                 ->take(6)
                 ->withCount('images')
                 ->get(),
+            'recentActivities' => [],
+            'systemStatus' => [],
         ];
     }
 
@@ -170,57 +133,45 @@ class DashboardController extends Controller
     {
         $activities = collect();
 
-        // Recent image uploads
-        $recentImages = Image::with('owner')
-            ->orderBy('created_at', 'desc')
-            ->take(5)
-            ->get()
-            ->map(function ($image) {
-                return [
-                    'type' => 'image_uploaded',
-                    'message' => "{$image->owner->name} uploaded \"{$image->title}\"",
-                    'timestamp' => $image->created_at,
-                    'user' => $image->owner,
-                ];
-            });
+        try {
+            // Recent image uploads
+            $recentImages = Image::with('owner')
+                ->orderBy('created_at', 'desc')
+                ->take(3)
+                ->get()
+                ->map(function ($image) {
+                    return [
+                        'id' => $image->id,
+                        'type' => 'image_uploaded',
+                        'message' => "{$image->owner->name} uploaded \"{$image->title}\"",
+                        'timestamp' => $image->created_at,
+                    ];
+                });
 
-        // Recent comments
-        $recentComments = Comment::approved()
-            ->with(['user', 'image'])
-            ->orderBy('created_at', 'desc')
-            ->take(5)
-            ->get()
-            ->map(function ($comment) {
-                return [
-                    'type' => 'comment_added',
-                    'message' => "{$comment->user->name} commented on \"{$comment->image->title}\"",
-                    'timestamp' => $comment->created_at,
-                    'user' => $comment->user,
-                ];
-            });
+            // Recent albums
+            $recentAlbums = Album::with('owner')
+                ->orderBy('created_at', 'desc')
+                ->take(2)
+                ->get()
+                ->map(function ($album) {
+                    return [
+                        'id' => $album->id,
+                        'type' => 'album_created',
+                        'message' => "{$album->owner->name} created album \"{$album->title}\"",
+                        'timestamp' => $album->created_at,
+                    ];
+                });
 
-        // Recent user registrations
-        $recentUsers = User::active()
-            ->orderBy('created_at', 'desc')
-            ->take(3)
-            ->get()
-            ->map(function ($user) {
-                return [
-                    'type' => 'user_registered',
-                    'message' => "{$user->name} joined the gallery",
-                    'timestamp' => $user->created_at,
-                    'user' => $user,
-                ];
-            });
-
-        return $activities
-            ->merge($recentImages)
-            ->merge($recentComments)
-            ->merge($recentUsers)
-            ->sortByDesc('timestamp')
-            ->take(10)
-            ->values()
-            ->all();
+            return $activities
+                ->merge($recentImages)
+                ->merge($recentAlbums)
+                ->sortByDesc('timestamp')
+                ->take(5)
+                ->values()
+                ->all();
+        } catch (\Exception $e) {
+            return [];
+        }
     }
 
     /**
@@ -228,69 +179,16 @@ class DashboardController extends Controller
      */
     private function getSystemStatus(): array
     {
-        return [
-            'database' => $this->checkDatabaseStatus(),
-            'storage' => $this->checkStorageStatus(),
-            'queue' => $this->checkQueueStatus(),
-            'cache' => $this->checkCacheStatus(),
-        ];
-    }
-
-    private function checkDatabaseStatus(): array
-    {
         try {
             DB::connection()->getPdo();
-            return ['status' => 'healthy', 'message' => 'Database connection is working'];
+            $dbStatus = 'healthy';
         } catch (\Exception $e) {
-            return ['status' => 'error', 'message' => 'Database connection failed'];
+            $dbStatus = 'error';
         }
-    }
 
-    private function checkStorageStatus(): array
-    {
-        try {
-            $totalSize = Image::sum('size_bytes');
-            $formattedSize = $this->formatBytes($totalSize);
-            return [
-                'status' => 'healthy',
-                'message' => "Total storage used: {$formattedSize}"
-            ];
-        } catch (\Exception $e) {
-            return ['status' => 'error', 'message' => 'Storage check failed'];
-        }
-    }
-
-    private function checkQueueStatus(): array
-    {
-        // This is a simplified check - in production you'd check actual queue metrics
         return [
-            'status' => 'healthy',
-            'message' => 'Queue system operational'
+            'overall' => $dbStatus === 'healthy' ? 'Healthy' : 'Issues',
+            'color' => $dbStatus === 'healthy' ? 'green' : 'red',
         ];
-    }
-
-    private function checkCacheStatus(): array
-    {
-        try {
-            cache()->put('system_check', 'test', 60);
-            $test = cache()->get('system_check');
-            
-            return [
-                'status' => $test === 'test' ? 'healthy' : 'warning',
-                'message' => $test === 'test' ? 'Cache is working' : 'Cache may have issues'
-            ];
-        } catch (\Exception $e) {
-            return ['status' => 'error', 'message' => 'Cache check failed'];
-        }
-    }
-
-    private function formatBytes(int $bytes): string
-    {
-        if ($bytes === 0) return '0 B';
-        
-        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
-        $unitIndex = floor(log($bytes, 1024));
-        
-        return round($bytes / pow(1024, $unitIndex), 2) . ' ' . $units[$unitIndex];
     }
 }

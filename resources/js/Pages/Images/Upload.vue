@@ -60,6 +60,68 @@
                 @files-selected="onFilesSelected"
               />
 <div class="mt-4 flex items-center gap-3">
+
+<!-- Album and Privacy Settings -->
+<div class="mb-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+  <!-- Album Selection -->
+  <div>
+    <label for="album" class="block text-sm font-medium text-gray-700 mb-2">
+      Add to Album (Optional)
+    </label>
+    <select
+      id="album"
+      v-model="selectedAlbum"
+      class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+    >
+      <option value="">No Album (Individual Images)</option>
+      <option v-for="album in albums" :key="album.id" :value="album.id">
+        {{ album.title }}
+      </option>
+    </select>
+    <p class="mt-1 text-sm text-gray-500">
+      Choose an album to organize your images
+    </p>
+  </div>
+
+  <!-- Privacy Settings -->
+  <div>
+    <label class="block text-sm font-medium text-gray-700 mb-2">
+      Privacy Settings
+    </label>
+    <div class="space-y-2">
+      <label class="flex items-center">
+        <input
+          type="radio"
+          v-model="selectedPrivacy"
+          value="public"
+          class="mr-2 text-blue-600"
+        />
+        <span class="text-sm">Public - Visible to everyone</span>
+      </label>
+      <label class="flex items-center">
+        <input
+          type="radio"
+          v-model="selectedPrivacy"
+          value="unlisted"
+          class="mr-2 text-blue-600"
+        />
+        <span class="text-sm">Unlisted - Only accessible via direct link</span>
+      </label>
+      <label class="flex items-center">
+        <input
+          type="radio"
+          v-model="selectedPrivacy"
+          value="private"
+          class="mr-2 text-blue-600"
+        />
+        <span class="text-sm">Private - Only visible to you</span>
+      </label>
+    </div>
+  </div>
+</div>
+
+
+
   <!-- File Input Button -->
   <label class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 cursor-pointer">
     <input
@@ -270,6 +332,11 @@
     },
   })
 
+// Form data for album and privacy
+const selectedAlbum = ref('')
+const selectedPrivacy = ref('unlisted') // Default to unlisted
+
+
   const allowedExtensions = computed(() => {
     return props.allowedExtensions?.split(',') || props.allowedMimes.split(',')
   })
@@ -339,7 +406,11 @@ const submitToStore = async () => {
       formData.append('files[]', f)
       currentFileName.value = f.name
     })
-    formData.append('privacy', props.defaultPrivacy)
+    if (selectedAlbum.value) {
+  formData.append('album_id', selectedAlbum.value)
+}
+formData.append('privacy', selectedPrivacy.value)
+
 
     const resp = await axios.post(route('upload.store'), formData, {
       headers: { 'Content-Type': 'multipart/form-data' },

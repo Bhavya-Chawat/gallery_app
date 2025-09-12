@@ -24,9 +24,6 @@
               <NavLink :href="route('collections.index')" :active="route().current('collections.*')">
                 Collections
               </NavLink>
-              <NavLink :href="route('tags.index')" :active="route().current('tags.*')">
-                Tags
-              </NavLink>
             </div>
           </div>
 
@@ -136,9 +133,6 @@
           </ResponsiveNavLink>
           <ResponsiveNavLink :href="route('collections.index')" :active="route().current('collections.*')">
             Collections
-          </ResponsiveNavLink>
-          <ResponsiveNavLink :href="route('tags.index')" :active="route().current('tags.*')">
-            Tags
           </ResponsiveNavLink>
         </div>
 

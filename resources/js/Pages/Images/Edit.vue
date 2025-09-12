@@ -226,7 +226,7 @@
 </template>
 
 <script setup>
-import { Head, Link, useForm, router } from '@inertiajs/vue3'
+import { Head, Link, useForm, router } from "@inertiajs/vue3"
 import route from 'ziggy-js'
 import { ChevronRightIcon } from '@heroicons/vue/24/outline'
 
@@ -262,11 +262,11 @@ const form = useForm({
 })
 
 const getImageUrl = (variant = 'medium') => {
-  if (props.image.versions) {
-    const version = props.image.versions.find(v => v.variant === variant)
-    if (version) return version.url
+  // Use direct MinIO URL since thumbnails aren't processed yet
+  if (props.image.storage_path) {
+    return `http://localhost:9000/gallery-images/${props.image.storage_path}`
   }
-  return props.image.url || props.image.storage_path
+  return props.image.url || '/images/placeholder.jpg'
 }
 
 const submit = () => {
