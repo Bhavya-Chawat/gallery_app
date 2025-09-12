@@ -4,7 +4,8 @@ import '../css/app.css';
 import { createApp, h } from 'vue';
 import { createInertiaApp } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
-import route from 'ziggy-js';
+import { ZiggyVue } from 'ziggy-js/dist/vue.m.js'
+import route from 'ziggy-js'
 
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel Gallery';
@@ -15,6 +16,12 @@ createInertiaApp({
     setup({ el, App, props, plugin }) {
         return createApp({ render: () => h(App, props) })
             .use(plugin)
+            .use(ZiggyVue)
+            .mixin({
+                methods: {
+                    route
+                }
+            })
             .mount(el);
     },
     progress: {

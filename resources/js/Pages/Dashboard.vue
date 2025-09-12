@@ -241,12 +241,66 @@
         </div>
       </div>
     </div>
+
+    <!-- Simple Modal Test -->
+<div v-if="showRequestModal" class="fixed inset-0 z-50 overflow-y-auto">
+    <!-- Background overlay -->
+    <div class="fixed inset-0 bg-black opacity-50"></div>
+    
+    <!-- Modal content -->
+    <div class="flex min-h-full items-center justify-center p-4">
+        <div class="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">Upload Access Required</h2>
+            <p class="text-gray-600 mb-6">
+                You need Editor permissions to upload images. Request access from an administrator?
+            </p>
+            
+            <div class="flex justify-center space-x-4">
+                <button 
+                    @click="requestAccess" 
+                    :disabled="form.processing"
+                    class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                    Request Access
+                </button>
+                <button 
+                    @click="showRequestModal = false"
+                    class="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                >
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+    <!-- Request Access Modal
+<Modal :show="showRequestModal" @close="showRequestModal = false">
+    <div class="p-6 text-center">
+        <h2 class="text-2xl font-bold text-gray-900 mb-4">Upload Access Required</h2>
+        <p class="text-gray-600 mb-6">
+            You need Editor permissions to upload images. Request access from an administrator?
+        </p>
+        
+        <div class="flex justify-center space-x-4">
+            <PrimaryButton @click="requestAccess" :disabled="form.processing">
+                Request Access
+            </PrimaryButton>
+            <SecondaryButton @click="showRequestModal = false">
+                Cancel
+            </SecondaryButton>
+        </div>
+    </div>
+</Modal> -->
+
   </AppLayout>
+
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { Head, Link, usePage } from '@inertiajs/vue3'
+import { computed, ref } from 'vue'
+import { Head, Link, usePage, useForm  } from '@inertiajs/vue3'
 import route from 'ziggy-js'
 import {
   PlusIcon,
@@ -262,6 +316,9 @@ import {
 import AppLayout from '@/Layouts/AppLayout.vue'
 import StorageUsageCard from '@/Components/StorageUsageCard.vue'
 import StatCard from '@/Components/StatCard.vue'
+// import Modal from '@/Components/Modal.vue';
+// import PrimaryButton from '@/Components/PrimaryButton.vue';
+// import SecondaryButton from '@/Components/SecondaryButton.vue';
 
 const page = usePage()
 
@@ -277,7 +334,21 @@ const props = defineProps({
   systemStatus: { type: Object, default: () => ({}) },
   auth: { type: Object, default: () => ({ user: null, roles: [] }) },
   errors: { type: Object, default: () => ({}) },
-})
+  upload_request_needed: { type: Boolean, default: false }, 
+});
+
+
+const showRequestModal = ref(props.upload_request_needed || false);
+const form = useForm({});
+
+const requestAccess = () => {
+    form.post('/request-editor-access', {
+        onSuccess: () => {
+            showRequestModal.value = false;
+        }
+    });
+};
+
 
 const canUpload = computed(() => {
   return page.props.auth.user?.permissions?.includes('upload_images')

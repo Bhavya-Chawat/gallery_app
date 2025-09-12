@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen bg-slate-900">
     <!-- Simple navigation -->
     <nav class="bg-white shadow-sm">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -52,6 +52,14 @@
     <Footer />
   </div>
 </template>
+
+<style scoped>
+/* Ensure no margins */
+body {
+  margin: 0;
+  padding: 0;
+}
+</style>
 
 <script setup>
 import { Link } from '@inertiajs/vue3'

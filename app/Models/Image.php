@@ -160,12 +160,12 @@ class Image extends Model
             return $this->getOriginalUrl();
         }
 
-        return Storage::disk('s3')->url($version->storage_path);
+        return Storage::disk('minio')->url($version->storage_path);
     }
 
     public function getOriginalUrl(): string
     {
-        return Storage::disk('s3')->url($this->storage_path);
+        return Storage::disk('minio')->url($this->storage_path);
     }
 
     public function getSignedUrl(string $variant = 'original', int $ttl = 300): string
@@ -174,7 +174,7 @@ class Image extends Model
             ? $this->storage_path 
             : $this->versions()->where('variant', $variant)->first()?->storage_path ?? $this->storage_path;
 
-        return Storage::disk('s3')->temporaryUrl($path, now()->addSeconds($ttl));
+        return Storage::disk('minio')->temporaryUrl($path, now()->addSeconds($ttl));
     }
 
     // Status Methods

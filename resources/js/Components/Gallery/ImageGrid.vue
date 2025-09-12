@@ -54,15 +54,21 @@
       </div>
     </div>
 
+
+    <div v-if="lightboxOpen" class="fixed top-0 left-0 z-40 bg-red-500 text-white p-2">
+  DEBUG: Lightbox should be open! Index: {{ currentImageIndex }}
+</div>
+
+
     <!-- Lightbox -->
-    <Lightbox
-      v-if="lightboxOpen"
-      :images="images"
-      :initial-index="currentImageIndex"
-      @close="closeLightbox"
-      @next="nextImage"
-      @prev="prevImage"
-    />
+<Lightbox
+  v-if="lightboxOpen"
+  :images="images"
+  :initial-index="currentImageIndex"
+  @close="closeLightbox"
+  @next="nextImage"
+  @prev="prevImage"
+/>
   </div>
 </template>
 
@@ -142,6 +148,8 @@ const gridClasses = computed(() => {
   return `grid-cols-${props.columns}`
 })
 
+
+
 const toggleSelection = (imageId) => {
   const index = selectedImages.value.indexOf(imageId)
   if (index > -1) {
@@ -158,13 +166,17 @@ const clearSelection = () => {
 }
 
 const openImage = (imageId) => {
+  console.log('ImageGrid openImage called with:', imageId)
   const index = props.images.findIndex(img => img.id === imageId)
+  console.log('Found image at index:', index)
   if (index !== -1) {
     currentImageIndex.value = index
     lightboxOpen.value = true
+    console.log('Lightbox should open now, lightboxOpen:', lightboxOpen.value)
   }
   emit('open-image', imageId)
 }
+
 
 const closeLightbox = () => {
   lightboxOpen.value = false

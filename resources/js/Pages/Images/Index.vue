@@ -118,14 +118,14 @@
               :empty-message="getEmptyMessage()"
               :show-upload-link="canUpload && !hasFilters"
             />
+<!-- Pagination -->
+<Pagination
+  v-if="images.data && images.data.length > 0 && images.meta"
+  :links="images.links || []"
+  :meta="images.meta || {}"
+  class="mt-6"
+/>
 
-            <!-- Pagination -->
-            <Pagination
-              v-if="images.data.length > 0"
-              :links="images.links"
-              :meta="images.meta"
-              class="mt-6"
-            />
           </div>
         </div>
       </div>
@@ -168,6 +168,15 @@ const searchForm = reactive({
   sort: props.filters.sort || 'created_at',
   direction: props.filters.direction || 'desc',
 })
+
+const getImageUrl = (image, variant = 'small') => {
+  // Use direct MinIO URL since thumbnails aren't processed yet
+  if (image.storage_path) {
+    return `http://localhost:9000/gallery-images/${image.storage_path}`
+  }
+  return '/images/placeholder.jpg'
+}
+
 
 const hasFilters = computed(() => {
   return Object.values(searchForm).some(value => value && value !== 'created_at' && value !== 'desc')

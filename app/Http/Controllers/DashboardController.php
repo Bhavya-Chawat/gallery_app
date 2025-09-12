@@ -42,7 +42,9 @@ class DashboardController extends Controller
             'roles' => method_exists($user, 'roles') ? $user->roles : [],
         ];
         $data['errors'] = session('errors') ?? [];
-        return Inertia::render('Dashboard', $data);
+        return Inertia::render('Dashboard', [
+          $data,
+         'upload_request_needed' => session('upload_request_needed', false),]);
     }
 
     /**

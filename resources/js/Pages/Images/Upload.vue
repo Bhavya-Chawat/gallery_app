@@ -59,21 +59,61 @@
                 :storage-remaining="storageUsage.remaining"
                 @files-selected="onFilesSelected"
               />
-              <div class="mt-4 flex items-center gap-3">
-                <button
-                  type="button"
-                  class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-                  :disabled="!selected.length || submitting"
-                  @click="submitToStore"
-                >
-                  {{ submitting ? `Uploading ${progressText}` : 'Start Upload' }}
-                </button>
-                <span v-if="selected.length" class="text-sm text-gray-500">
-                  {{ selected.length }} file(s) selected
-                </span>
-              </div>
+<div class="mt-4 flex items-center gap-3">
+  <!-- File Input Button -->
+  <label class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 cursor-pointer">
+    <input
+      type="file"
+      multiple
+      accept=".jpg,.jpeg,.png,.webp,.avif"
+      class="hidden"
+      @change="onFileInputChange"
+    />
+    Select Files
+  </label>
+  
+  <button
+  type="button"
+  class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+  :disabled="!selected.length || submitting"
+  @click="submitToStore"
+>
+  <span v-if="uploading">
+    Uploading... {{ uploadProgress }}%
+  </span>
+  <span v-else-if="submitting">
+    Processing...
+  </span>
+  <span v-else>
+    Start Upload
+  </span>
+</button>
+
+  <span v-if="selected.length" class="text-sm text-gray-500">
+    {{ selected.length }} file(s) selected
+  </span>
+</div>
+
             </div>
           </div>
+<!-- Progress Bar (show when uploading) -->
+<div v-if="uploading" class="mt-4">
+  <div class="flex items-center justify-between mb-2">
+    <span class="text-sm text-gray-600">
+      Uploading: {{ currentFileName }}
+    </span>
+    <span class="text-sm text-gray-600">{{ uploadProgress }}%</span>
+  </div>
+  <div class="w-full bg-gray-200 rounded-full h-2">
+    <div 
+      class="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+      :style="{ width: uploadProgress + '%' }"
+    ></div>
+  </div>
+  <div class="mt-2 text-sm text-gray-500">
+    {{ uploadedCount }} of {{ selected.length }} files uploaded
+  </div>
+</div>
 
           <!-- Upload Guidelines -->
           <div class="mt-6 bg-blue-50 border border-blue-200 rounded-md p-4">
@@ -127,6 +167,59 @@
           </div>
         </div>
       </div>
+      <!-- Success Modal -->
+<div v-if="showSuccessModal" class="fixed inset-0 z-50 overflow-y-auto">
+  <div class="fixed inset-0 bg-black opacity-50"></div>
+  <div class="flex min-h-full items-center justify-center p-4">
+    <div class="relative bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 p-6">
+      <div class="text-center">
+        <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+          <svg class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        
+        <h3 class="text-lg font-medium text-gray-900 mb-2">
+          Upload Successful!
+        </h3>
+        <p class="text-gray-600 mb-6">
+          {{ uploadedImages.length }} image{{ uploadedImages.length !== 1 ? 's' : '' }} uploaded successfully
+        </p>
+        
+        <!-- Uploaded Images Preview -->
+        <div v-if="uploadedImages.length > 0" class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
+          <div
+            v-for="image in uploadedImages.slice(0, 6)"
+            :key="image.id"
+            class="aspect-square bg-gray-100 rounded-lg overflow-hidden"
+          >
+            <img
+              :src="getImageUrl(image, 'small')"
+              :alt="image.title"
+              class="w-full h-full object-cover"
+            />
+          </div>
+        </div>
+        
+        <div class="flex justify-center space-x-4">
+          <Link
+            :href="route('my.images')"
+            class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            View My Images
+          </Link>
+          <button 
+            @click="showSuccessModal = false"
+            class="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+          >
+            Upload More
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
     </AppLayout>
   </template>
 
@@ -189,67 +282,97 @@
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
 
-  const getImageUrl = (image, variant = 'small') => {
-    if (image.versions) {
-      const version = image.versions.find(v => v.variant === variant)
-      if (version) return version.url
-    }
-    return image.url || image.storage_path
+const onFileInputChange = (event) => {
+  const files = Array.from(event.target.files)
+  selected.value = files
+  // Reset input to allow selecting same files again
+  event.target.value = ''
+}
+
+
+const getImageUrl = (image, variant = 'small') => {
+  // Use direct MinIO URL since thumbnails aren't processed yet
+  if (image.storage_path) {
+    return `http://localhost:9000/gallery-images/${image.storage_path}`
   }
+  // Use direct MinIO URL since thumbnails aren't processed yet
+  if (image.storage_path) {
+    return `http://localhost:9000/gallery-images/${image.storage_path}`
+  }
+  return '/images/placeholder.jpg'
+}
+
 
   const selected = ref([])
   const submitting = ref(false)
   const uploadedCount = ref(0)
   const lastError = ref(null)
   const progressText = computed(() => `${uploadedCount.value}/${selected.value.length}`)
+  // Add these to your existing reactive vars
+const uploading = ref(false)
+const uploadProgress = ref(0)
+const showSuccessModal = ref(false)
+const uploadedImages = ref([])
+const currentFileName = ref('')
+
 
   const onFilesSelected = (files) => {
     selected.value = files
   }
 
   // Fallback bulk upload via direct API → Image records + S3 putFileAs
-  const submitToStore = async () => {
-    if (!selected.value.length) return
-    try {
-      submitting.value = true
-      uploadedCount.value = 0
-      lastError.value = null
-      await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
+const submitToStore = async () => {
+  if (!selected.value.length) return
+  
+  try {
+    submitting.value = true
+    uploading.value = true
+    uploadProgress.value = 0
+    uploadedCount.value = 0
+    lastError.value = null
+    showSuccessModal.value = false
+    
+    await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
 
-      const formData = new FormData()
-      selected.value.forEach(f => formData.append('files[]', f))
-      // Optional metadata from page defaults
-      formData.append('privacy', props.defaultPrivacy)
+    const formData = new FormData()
+    selected.value.forEach(f => {
+      formData.append('files[]', f)
+      currentFileName.value = f.name
+    })
+    formData.append('privacy', props.defaultPrivacy)
 
-      const resp = await axios.post(route('upload.store'), formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        withCredentials: true,
-        onUploadProgress: (progressEvent) => {
-          if (progressEvent.lengthComputable) {
-            uploadedCount.value = Math.round((progressEvent.loaded / progressEvent.total) * selected.value.length)
-          }
+    const resp = await axios.post(route('upload.store'), formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      withCredentials: true,
+      onUploadProgress: (progressEvent) => {
+        if (progressEvent.lengthComputable) {
+          uploadProgress.value = Math.round((progressEvent.loaded / progressEvent.total) * 100)
+          uploadedCount.value = Math.round((progressEvent.loaded / progressEvent.total) * selected.value.length)
         }
-      })
+      }
+    })
 
-      // Redirect to gallery or first image
-      if (resp.data?.images?.length) {
-        window.location.href = route('images.show', resp.data.images[0].id)
-      } else {
-        window.location.href = route('my.images')
-      }
-    } catch (e) {
-      console.error('Bulk upload failed', e)
-      // Extract server response details if available
-      const status = e?.response?.status
-      const data = e?.response?.data
-      lastError.value = {
-        status,
-        message: data?.message || e.message,
-        errors: data?.errors || data?.error || data,
-      }
-      alert(`Upload failed${status ? ` (HTTP ${status})` : ''}. Check console for details.`)
-    } finally {
-      submitting.value = false
+    // Show success modal instead of redirect
+    if (resp.data?.images?.length) {
+      uploadedImages.value = resp.data.images
+      showSuccessModal.value = true
+      selected.value = [] // Clear selection
     }
+    
+  } catch (e) {
+    console.error('Upload failed', e)
+    const status = e?.response?.status
+    const data = e?.response?.data
+    lastError.value = {
+      status,
+      message: data?.message || e.message,
+      errors: data?.errors || data?.error || data,
+    }
+  } finally {
+    submitting.value = false
+    uploading.value = false
+    uploadProgress.value = 0
   }
+}
+
   </script>

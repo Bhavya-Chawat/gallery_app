@@ -297,6 +297,7 @@ const props = defineProps({
   errors: { type: Object, default: () => ({}) },
 })
 
+
 const lightboxOpen = ref(false)
 const isLiked = ref(props.userLike)
 
@@ -337,20 +338,22 @@ const formatVariantName = (variant) => {
 }
 
 const getImageUrl = (variant = 'large') => {
-  if (props.image.versions) {
-    const version = props.image.versions.find(v => v.variant === variant)
-    if (version) return version.url
+  // Use direct MinIO URL since thumbnails aren't processed yet
+  if (props.image.storage_path) {
+    return `http://localhost:9000/gallery-images/${props.image.storage_path}`
   }
-  return props.image.url || props.image.storage_path
+  return props.image.url || '/images/placeholder.jpg'
 }
 
+
 const getRelatedImageUrl = (image) => {
-  if (image.versions) {
-    const version = image.versions.find(v => v.variant === 'small')
-    if (version) return version.url
+  // Use direct MinIO URL since thumbnails aren't processed yet
+  if (image.storage_path) {
+    return `http://localhost:9000/gallery-images/${image.storage_path}`
   }
-  return image.url || image.storage_path
+  return image.url || '/images/placeholder.jpg'
 }
+
 
 const openLightbox = () => {
   lightboxOpen.value = true

@@ -12,18 +12,15 @@
       </p>
     </div>
     <div class="flex flex-1 justify-between sm:justify-end">
-      <button
-        v-if="links.prev"
-        @click="navigate(links.prev)"
-        class="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-      >
-        <ChevronLeftIcon class="h-5 w-5 mr-1" />
-        Previous
-      </button>
-      <div v-else class="relative inline-flex items-center rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-400 cursor-not-allowed">
-        <ChevronLeftIcon class="h-5 w-5 mr-1" />
-        Previous
-      </div>
+
+      <Link
+  v-if="links.find(l => (l.label || '').includes('Previous') || (l.label || '').includes('&laquo;'))?.url"
+  :href="links.find(l => (l.label || '').includes('Previous') || (l.label || '').includes('&laquo;')).url"
+  class="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+>
+  <ChevronLeftIcon class="h-5 w-5 mr-1" />
+  Previous
+</Link>
 
       <!-- Page Numbers (for larger screens) -->
       <div class="hidden md:flex">
@@ -43,25 +40,22 @@
         ></button>
       </div>
 
-      <button
-        v-if="links.next"
-        @click="navigate(links.next)"
-        class="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-      >
-        Next
-        <ChevronRightIcon class="h-5 w-5 ml-1" />
-      </button>
-      <div v-else class="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-400 cursor-not-allowed">
-        Next
-        <ChevronRightIcon class="h-5 w-5 ml-1" />
-      </div>
+<!-- Next Button -->  
+<Link
+  v-if="links.find(l => (l.label || '').includes('Next') || (l.label || '').includes('&raquo;'))?.url"
+  :href="links.find(l => (l.label || '').includes('Next') || (l.label || '').includes('&raquo;')).url"
+  class="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+>
+  Next
+  <ChevronRightIcon class="h-5 w-5 ml-1" />
+</Link>
     </div>
   </nav>
 </template>
 
 <script setup>
 import { computed } from 'vue'
-import { router } from '@inertiajs/vue3'
+import { router, Link } from '@inertiajs/vue3'
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -79,12 +73,19 @@ const props = defineProps({
 })
 
 const pageLinks = computed(() => {
-  if (!props.links.data) return []
+  // Check if links exists and is an array
+  if (!props.links || !Array.isArray(props.links)) {
+    return []
+  }
   
-  return props.links.data.filter(link => {
-    return link.label !== '&laquo; Previous' && link.label !== 'Next &raquo;'
+  // Filter out previous/next buttons to get just page numbers
+  return props.links.filter(link => {
+    const label = link.label || ''
+    return !label.includes('Previous') && !label.includes('Next') && !label.includes('&laquo;') && !label.includes('&raquo;')
   })
 })
+
+
 
 const navigate = (url) => {
   if (url) {

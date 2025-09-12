@@ -275,7 +275,7 @@ class UploadController extends Controller
         $errors = [];
 
         $disk = config('filesystems.default', 'local');
-        $disk = 'public';
+        $disk = 'minio';
         foreach ($request->file('files') as $file) {
             try {
                 // Check storage quota

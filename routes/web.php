@@ -142,26 +142,40 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('collections.toggle-publish');
 
     // Upload Routes
-    Route::get('/upload', function () {
-        return Inertia::render('Images/Upload', [
-            'albums' => auth()->user()->albums()->select('id', 'title')->get(),
-            'maxUploadSize' => config('filesystems.gallery.max_upload_size', 52428800),
-            'allowedMimes' => implode(',', config('filesystems.gallery.allowed_extensions', ['jpg','jpeg','png','webp','avif'])),
-            'allowedExtensions' => implode(',', config('filesystems.gallery.allowed_extensions', ['jpg','jpeg','png','webp','avif'])),
-            'defaultPrivacy' => config('filesystems.gallery.default_privacy', 'unlisted'),
-            'storageUsage' => [
-                'used' => auth()->user()->storage_used_bytes,
-                'quota' => auth()->user()->storage_quota_bytes,
-                'percentage' => auth()->user()->getStorageUsagePercentage(),
-                'remaining' => auth()->user()->getRemainingStorageBytes(),
-            ],
-        ]);
-    })->name('upload')->middleware('can:create,App\Models\Image');
+Route::get('/upload', function () {
+    $user = auth()->user();
+    
+    if (!$user->can('create', App\Models\Image::class)) {
+        return redirect('/dashboard')->with('upload_request_needed', true);
+    }
+    
+    return Inertia::render('Images/Upload', [
+        'albums' => $user->albums()->select('id', 'title')->get(),
+        'maxUploadSize' => config('filesystems.gallery.max_upload_size', 52428800),
+        'allowedMimes' => implode(',', config('filesystems.gallery.allowed_extensions', ['jpg','jpeg','png','webp','avif'])),
+        'allowedExtensions' => implode(',', config('filesystems.gallery.allowed_extensions', ['jpg','jpeg','png','webp','avif'])),
+        'defaultPrivacy' => config('filesystems.gallery.default_privacy', 'unlisted'),
+        'storageUsage' => [
+            'used' => $user->storage_used_bytes,
+            'quota' => $user->storage_quota_bytes,
+            'percentage' => $user->getStorageUsagePercentage(),
+            'remaining' => $user->getRemainingStorageBytes(),
+        ],
+    ]);
+})->name('upload');
+
 
     // Handle direct uploads from the Upload page (maps to existing API logic)
     Route::post('/upload', [\App\Http\Controllers\Api\UploadController::class, 'direct'])
         ->name('upload.store');
 });
+
+Route::post('/request-editor-access', function () {
+    $user = auth()->user();
+    \Log::info("User {$user->name} ({$user->email}) requested editor access");
+    return redirect('/dashboard')->with('success', 'Request sent to administrators');
+})->name('request-editor-access')->middleware('auth');
+
 
 // Admin Routes
 Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {

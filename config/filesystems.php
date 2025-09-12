@@ -61,26 +61,26 @@ return [
             ],
         ],
 
-        // MinIO Configuration (S3-compatible)
-        // 'minio' => [
-        //     'driver' => 's3',
-        //     'key' => env('AWS_ACCESS_KEY_ID', 'sail'),
-        //     'secret' => env('AWS_SECRET_ACCESS_KEY', 'password'),
-        //     'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
-        //     'bucket' => env('AWS_BUCKET', 'local'),
-        //     'url' => env('AWS_URL'),
-        //     'endpoint' => env('AWS_ENDPOINT', 'http://minio:9000'),
-        //     'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', true),
-        //     'throw' => false,
-        //     'options' => [
-        //         'CacheControl' => 'max-age=31536000', // 1 year cache
-        //         'Metadata' => [
-        //             'uploaded-by' => 'gallery-app',
-        //         ],
-        //     ],
-        //     // Custom visibility settings for gallery images
-        //     'visibility' => 'public',
-        // ],
+       // MinIO Configuration (S3-compatible)
+        'minio' => [
+            'driver' => 's3',
+            'key' => env('AWS_ACCESS_KEY_ID', 'sail'),
+            'secret' => env('AWS_SECRET_ACCESS_KEY', 'password'),
+            'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
+            'bucket' => env('AWS_BUCKET', 'local'),
+            'url' => env('AWS_URL'),
+            'endpoint' => env('AWS_ENDPOINT', 'http://minio:9000'),
+            'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', true),
+            'throw' => false,
+            'options' => [
+                'CacheControl' => 'max-age=31536000', // 1 year cache
+                'Metadata' => [
+                    'uploaded-by' => 'gallery-app',
+                ],
+            ],
+            // Custom visibility settings for gallery images
+            'visibility' => 'public',
+        ],
 
         // Temporary storage for uploads
         'temp' => [

@@ -111,10 +111,15 @@ class ImageController extends Controller
         // Record view
         if ($image->isVisible()) {
             $image->incrementViews();
-            $image->viewCounts()->updateOrCreate(
-                ['date' => now()->toDateString()],
-                ['count' => \DB::raw('count + 1')]
-            );
+            
+            // Increment daily view count
+            $viewCount = $image->viewCounts()->firstOrCreate([
+                'date' => now()->toDateString()
+            ], [
+                'count' => 0
+            ]);
+            
+            $viewCount->increment('count');
         }
 
         // Get related images (from same album or with similar tags)

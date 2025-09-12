@@ -1,7 +1,8 @@
 <template>
   <div
-    class="group relative bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-200"
+    class="group relative bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-200 cursor-pointer"
     :class="{ 'ring-2 ring-blue-500': selected }"
+    @click="handleImageClick"
   >
     <!-- Selection checkbox -->
     <div v-if="showCheckbox" class="absolute top-2 left-2 z-10">
@@ -9,15 +10,13 @@
         type="checkbox"
         :checked="selected"
         @change="$emit('select', image.id)"
+        @click.stop
         class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
       >
     </div>
 
     <!-- Image -->
-    <div
-      class="aspect-square bg-gray-100 overflow-hidden cursor-pointer"
-      @click="$emit('open', image.id)"
-    >
+    <div class="aspect-square bg-gray-100 overflow-hidden">
       <img
         :src="getImageUrl('medium')"
         :alt="image.alt_text || image.title"
@@ -27,22 +26,22 @@
       >
     </div>
 
-    <!-- Overlay info -->
-    <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-end">
-      <div class="w-full p-3 text-white transform translate-y-full group-hover:translate-y-0 transition-transform duration-200">
-        <h3 class="text-sm font-medium truncate">
+    <!-- Overlay - NO CLICK HANDLER HERE -->
+    <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-end pointer-events-none">
+      <div class="w-full p-4 text-white transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+        <h3 class="text-sm font-semibold truncate mb-1">
           {{ image.title || 'Untitled' }}
         </h3>
-        <div class="flex items-center justify-between mt-1">
-          <span class="text-xs opacity-75">
+        <div class="flex items-center justify-between text-xs">
+          <span class="opacity-90">
             {{ formatDate(image.created_at) }}
           </span>
-          <div class="flex items-center space-x-2 text-xs">
-            <span v-if="image.views_count" class="flex items-center">
+          <div class="flex items-center space-x-3">
+            <span v-if="image.views_count" class="flex items-center opacity-90">
               <EyeIcon class="h-3 w-3 mr-1" />
               {{ formatCount(image.views_count) }}
             </span>
-            <span v-if="image.likes_count" class="flex items-center">
+            <span v-if="image.likes_count" class="flex items-center opacity-90">
               <HeartIcon class="h-3 w-3 mr-1" />
               {{ formatCount(image.likes_count) }}
             </span>
@@ -51,44 +50,40 @@
       </div>
     </div>
 
-    <!-- Privacy indicator -->
-    <div v-if="image.privacy === 'private'" class="absolute top-2 right-2">
-      <LockClosedIcon class="h-4 w-4 text-gray-600 bg-white bg-opacity-75 rounded p-0.5" />
-    </div>
-
     <!-- Action menu -->
-    <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-      <Dropdown align="right" width="48" v-if="canEdit">
+    <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-auto" v-if="canEdit || canDelete || canDownload">
+      <Dropdown align="right" width="48" @click.stop>
         <template #trigger>
-          <button class="p-1 bg-white bg-opacity-75 rounded-full hover:bg-opacity-100">
-            <EllipsisVerticalIcon class="h-4 w-4 text-gray-600" />
+          <button class="p-1.5 bg-black/20 backdrop-blur-sm text-white rounded-full hover:bg-black/40 transition-all duration-200" @click.stop>
+            <EllipsisVerticalIcon class="h-4 w-4" />
           </button>
         </template>
 
-        <template #content>
-          <DropdownLink :href="route('images.show', image.slug)">
-            View Details
-          </DropdownLink>
-          <DropdownLink :href="route('images.edit', image.slug)" v-if="canEdit">
-            Edit
-          </DropdownLink>
-          <DropdownLink :href="route('images.download', image.slug)" v-if="canDownload">
-            Download
-          </DropdownLink>
-          <div class="border-t border-gray-100" v-if="canEdit"></div>
-          <DropdownLink
-            :href="route('images.destroy', image.slug)"
-            method="delete"
-            as="button"
-            class="text-red-600"
-            v-if="canDelete"
-            @click="confirmDelete"
-          >
-            Delete
-          </DropdownLink>
-        </template>
-      </Dropdown>
-    </div>
+    <template #content>
+      <DropdownLink :href="route('images.show', image.slug)">
+        View Details
+      </DropdownLink>
+      <DropdownLink :href="route('images.edit', image.slug)" v-if="canEdit">
+        Edit
+      </DropdownLink>
+      <DropdownLink :href="route('images.download', image.slug)" v-if="canDownload">
+        Download
+      </DropdownLink>
+      <div class="border-t border-gray-100" v-if="canEdit && canDelete"></div>
+      <DropdownLink
+        :href="route('images.destroy', image.slug)"
+        method="delete"
+        as="button"
+        class="text-red-600"
+        v-if="canDelete"
+        @click="confirmDelete"
+      >
+        Delete
+      </DropdownLink>
+    </template>
+  </Dropdown>
+</div>
+
 
     <!-- Image info -->
     <div class="p-3" v-if="showInfo">
@@ -168,12 +163,19 @@ const props = defineProps({
 const emit = defineEmits(['select', 'open'])
 
 const getImageUrl = (variant = 'medium') => {
-  if (props.image.versions) {
-    const version = props.image.versions.find(v => v.variant === variant)
-    if (version) return version.url
+  // Use direct MinIO URL since thumbnails aren't processed yet  
+  if (props.image.storage_path) {
+    return `http://localhost:9000/gallery-images/${props.image.storage_path}`
   }
-  return props.image.url || props.image.storage_path
+  return props.image.url || '/images/placeholder.jpg'
 }
+
+const handleImageClick = () => {
+  console.log('ImageCard clicked!', props.image.id)
+  emit('open', props.image.id)
+}
+
+
 
 const formatDate = (date) => {
   return new Date(date).toLocaleDateString()
