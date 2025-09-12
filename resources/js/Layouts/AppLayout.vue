@@ -9,7 +9,7 @@
             <!-- Logo -->
             <div class="flex-shrink-0 flex items-center">
               <Link :href="route('welcome')" class="text-xl font-bold text-gray-900">
-                {{ $page.props.app?.name || 'Gallery' }}
+                Gallery
               </Link>
             </div>
 
@@ -42,7 +42,7 @@
             </div>
 
             <!-- User menu -->
-            <div v-if="$page.props.auth.user" class="relative">
+            <div v-if="user" class="relative">
               <Dropdown align="right" width="48">
                 <template #trigger>
                   <button
@@ -50,10 +50,10 @@
                   >
                     <div class="flex items-center space-x-2">
                       <UserAvatar
-                        :user="$page.props.auth.user"
+                        :user="user"
                         size="sm"
                       />
-                      <span>{{ $page.props.auth.user.name }}</span>
+                      <span>{{ user.name || 'User' }}</span>
                     </div>
                     <ChevronDownIcon class="ml-2 h-4 w-4" />
                   </button>
@@ -137,13 +137,13 @@
         </div>
 
         <!-- Mobile user menu -->
-        <div v-if="$page.props.auth.user" class="pt-4 pb-1 border-t border-gray-200">
+        <div v-if="user" class="pt-4 pb-1 border-t border-gray-200">
           <div class="px-4">
             <div class="font-medium text-base text-gray-800">
-              {{ $page.props.auth.user.name }}
+              {{ user.name || 'User' }}
             </div>
             <div class="font-medium text-sm text-gray-500">
-              {{ $page.props.auth.user.email }}
+              {{ user.email || '' }}
             </div>
           </div>
 
@@ -184,10 +184,7 @@
     </main>
 
     <!-- Footer -->
-    <Footer />
-
-    <!-- Notifications -->
-    <NotificationList />
+    <Footer v-if="showFooter" />
   </div>
 </template>
 
@@ -208,23 +205,39 @@ import NavLink from '@/Components/NavLink.vue'
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue'
 import UserAvatar from '@/Components/UserAvatar.vue'
 import Footer from '@/Components/Footer.vue'
-import NotificationList from '@/Components/NotificationList.vue'
 
 const page = usePage()
 
 const showingNavigationDropdown = ref(false)
 const searchQuery = ref('')
 
+// Safe computed properties
+const user = computed(() => {
+  return page.props?.auth?.user || null
+})
+
 const canUpload = computed(() => {
-  return page.props.auth.user && page.props.auth.user.permissions?.includes('upload_images')
+  return user.value && (
+    user.value.can_upload || 
+    user.value.roles?.some(role => role === 'admin' || role === 'editor') ||
+    user.value.permissions?.includes('upload_images')
+  )
 })
 
 const canRegister = computed(() => {
-  return page.props.canRegister
+  return page.props?.canRegister ?? true
 })
 
 const isAdmin = computed(() => {
-  return page.props.auth.user?.roles?.includes('admin')
+  return user.value?.roles?.some(role => role === 'admin') || 
+         user.value?.roles?.includes('admin') ||
+         false
+})
+
+const showFooter = computed(() => {
+  // Only show footer on certain pages
+  const currentRoute = route().current()
+  return !currentRoute?.includes('admin') && !currentRoute?.includes('upload')
 })
 
 const performSearch = () => {

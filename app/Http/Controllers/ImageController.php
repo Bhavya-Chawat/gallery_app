@@ -5,8 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Album;
 use App\Models\Image;
 use App\Models\Tag;
+use App\Models\Like;
+use App\Models\Collection;
+use App\Models\ViewCount;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class ImageController extends Controller
@@ -16,7 +20,7 @@ class ImageController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Image::with(['owner', 'album']);
+        $query = Image::with(['owner', 'album', 'tags']);
         
         // Check if this is "My Images" request
         $isMyImages = $request->get('owner') === 'mine' || $request->get('show_all');
@@ -37,7 +41,17 @@ class ImageController extends Controller
             $query->where(function ($q) use ($request) {
                 $q->where('title', 'like', '%' . $request->search . '%')
                   ->orWhere('caption', 'like', '%' . $request->search . '%')
-                  ->orWhere('alt_text', 'like', '%' . $request->search . '%');
+                  ->orWhere('alt_text', 'like', '%' . $request->search . '%')
+                  ->orWhereHas('tags', function ($tagQuery) use ($request) {
+                      $tagQuery->where('name', 'like', '%' . $request->search . '%');
+                  });
+            });
+        }
+        
+        // Filter by tag
+        if ($request->filled('tag')) {
+            $query->whereHas('tags', function ($tagQuery) use ($request) {
+                $tagQuery->where('name', $request->tag);
             });
         }
         
@@ -79,6 +93,9 @@ class ImageController extends Controller
             case 'views':
                 $query->orderBy('views_count', $direction);
                 break;
+            case 'likes':
+                $query->orderBy('likes_count', $direction);
+                break;
             case 'size':
                 $query->orderBy('size_bytes', $direction);
                 break;
@@ -88,10 +105,28 @@ class ImageController extends Controller
         
         $images = $query->paginate(24)->withQueryString();
         
+        // Add user like status and collections to each image
+        if ($currentUser) {
+            $imageIds = $images->pluck('id');
+            $userLikes = Like::where('user_id', $currentUser->id)
+                ->where('likeable_type', Image::class)
+                ->whereIn('likeable_id', $imageIds)
+                ->pluck('likeable_id')
+                ->toArray();
+            
+            $images->getCollection()->transform(function ($image) use ($userLikes) {
+                $image->user_has_liked = in_array($image->id, $userLikes);
+                return $image;
+            });
+        }
+        
         // Get additional data
         $albums = $currentUser && $isMyImages 
             ? $currentUser->albums()->select('id', 'title')->get()
             : Album::where('is_published', true)->get(['id', 'title', 'slug']);
+        
+        // Get popular tags
+        $popularTags = Tag::popular()->take(20)->get();
         
         // Check upload permission
         $canUpload = $currentUser && (
@@ -102,7 +137,8 @@ class ImageController extends Controller
         return Inertia::render('Images/Index', [
             'images' => $images,
             'albums' => $albums,
-            'filters' => $request->only(['search', 'album', 'privacy', 'published', 'date_from', 'date_to', 'sort', 'direction']),
+            'popularTags' => $popularTags,
+            'filters' => $request->only(['search', 'tag', 'album', 'privacy', 'published', 'date_from', 'date_to', 'sort', 'direction']),
             'canUpload' => $canUpload,
             'isMyImages' => $isMyImages,
         ]);
@@ -115,7 +151,7 @@ class ImageController extends Controller
     {
         $user = auth()->user();
         
-        $query = Image::with(['owner', 'album'])
+        $query = Image::with(['owner', 'album', 'tags'])
             ->where('owner_id', $user->id);
         
         // Search
@@ -123,7 +159,17 @@ class ImageController extends Controller
             $query->where(function ($q) use ($request) {
                 $q->where('title', 'like', '%' . $request->search . '%')
                   ->orWhere('caption', 'like', '%' . $request->search . '%')
-                  ->orWhere('alt_text', 'like', '%' . $request->search . '%');
+                  ->orWhere('alt_text', 'like', '%' . $request->search . '%')
+                  ->orWhereHas('tags', function ($tagQuery) use ($request) {
+                      $tagQuery->where('name', 'like', '%' . $request->search . '%');
+                  });
+            });
+        }
+        
+        // Filter by tag
+        if ($request->filled('tag')) {
+            $query->whereHas('tags', function ($tagQuery) use ($request) {
+                $tagQuery->where('name', $request->tag);
             });
         }
         
@@ -169,6 +215,9 @@ class ImageController extends Controller
             case 'views':
                 $query->orderBy('views_count', $direction);
                 break;
+            case 'likes':
+                $query->orderBy('likes_count', $direction);
+                break;
             case 'size':
                 $query->orderBy('size_bytes', $direction);
                 break;
@@ -178,29 +227,48 @@ class ImageController extends Controller
         
         $images = $query->paginate(24)->withQueryString();
         
-        // Get user's albums for filter dropdown
+        // Add user like status to each image
+        $imageIds = $images->pluck('id');
+        $userLikes = Like::where('user_id', $user->id)
+            ->where('likeable_type', Image::class)
+            ->whereIn('likeable_id', $imageIds)
+            ->pluck('likeable_id')
+            ->toArray();
+        
+        $images->getCollection()->transform(function ($image) use ($userLikes) {
+            $image->user_has_liked = in_array($image->id, $userLikes);
+            return $image;
+        });
+        
+        // Get user's albums and tags for filter dropdowns
         $albums = $user->albums()->select('id', 'title')->get();
+        $userTags = Tag::whereHas('images', function ($query) use ($user) {
+            $query->where('owner_id', $user->id);
+        })->get();
         
         return Inertia::render('Images/Index', [
             'images' => $images,
             'albums' => $albums,
-            'filters' => $request->only(['search', 'album', 'privacy', 'published', 'date_from', 'date_to', 'sort', 'direction']),
+            'popularTags' => $userTags,
+            'filters' => $request->only(['search', 'tag', 'album', 'privacy', 'published', 'date_from', 'date_to', 'sort', 'direction']),
             'canUpload' => $user->hasRole('admin') || $user->hasRole('editor'),
             'isMyImages' => true,
         ]);
     }
 
     /**
-     * Enhanced bulk operations including move to album
+     * Enhanced bulk operations including move to album and tag operations
      */
     public function bulkAction(Request $request)
     {
         $request->validate([
-            'action' => 'required|in:delete,publish,unpublish,privacy,move_to_album',
+            'action' => 'required|in:delete,publish,unpublish,privacy,move_to_album,add_tags,remove_tags',
             'image_ids' => 'required|array',
             'image_ids.*' => 'exists:images,id',
             'privacy_level' => 'required_if:action,privacy|in:public,unlisted,private',
-            'album_id' => 'required_if:action,move_to_album|nullable|exists:albums,id'
+            'album_id' => 'required_if:action,move_to_album|nullable|exists:albums,id',
+            'tags' => 'required_if:action,add_tags,remove_tags|array',
+            'tags.*' => 'string|max:50',
         ]);
 
         $imageIds = $request->image_ids;
@@ -288,6 +356,42 @@ class ImageController extends Controller
                     $message = "{$count} images removed from albums successfully.";
                 }
                 break;
+
+            case 'add_tags':
+                $tagIds = [];
+                foreach ($request->tags as $tagName) {
+                    $tag = Tag::firstOrCreate(['name' => trim($tagName)]);
+                    $tagIds[] = $tag->id;
+                }
+                
+                foreach ($images as $image) {
+                    $this->authorize('update', $image);
+                    $image->tags()->syncWithoutDetaching($tagIds);
+                }
+                
+                // Update tag usage counts
+                Tag::whereIn('id', $tagIds)->each(function ($tag) {
+                    $tag->updateUsageCount();
+                });
+                
+                $message = "Tags added to {$count} images successfully.";
+                break;
+
+            case 'remove_tags':
+                $tagIds = Tag::whereIn('name', $request->tags)->pluck('id');
+                
+                foreach ($images as $image) {
+                    $this->authorize('update', $image);
+                    $image->tags()->detach($tagIds);
+                }
+                
+                // Update tag usage counts
+                Tag::whereIn('id', $tagIds)->each(function ($tag) {
+                    $tag->updateUsageCount();
+                });
+                
+                $message = "Tags removed from {$count} images successfully.";
+                break;
         }
 
         return back()->with('success', $message);
@@ -300,25 +404,17 @@ class ImageController extends Controller
     {
         $this->authorize('view', $image);
 
-        $image->load(['owner', 'album']);
+        $image->load(['owner', 'album', 'tags', 'collections' => function($query) {
+    $query->with('curator');
+}]);
 
-        // Record view - DON'T increment here to avoid view spam
-        // Only increment if user visits show page directly, not through API calls
+        // Record view - increment view count and record in view_counts table
         if (!$request->ajax() && !$request->wantsJson()) {
-            $image->increment('views_count');
+            $this->recordView($image, $request);
         }
 
-        // Get related images (from same album)
-        $relatedImages = collect();
-        
-        if ($image->album_id) {
-            $relatedImages = Image::where('album_id', $image->album_id)
-                ->where('id', '!=', $image->id)
-                ->whereIn('privacy', ['public', 'unlisted'])
-                ->where('is_published', true)
-                ->take(6)
-                ->get();
-        }
+        // Get related images (from same album or with similar tags)
+        $relatedImages = $this->getRelatedImages($image);
 
         // Get comments
         $comments = $image->comments()
@@ -326,6 +422,16 @@ class ImageController extends Controller
             ->whereNull('parent_id')
             ->orderBy('created_at', 'desc')
             ->get();
+
+        // Check if current user liked this image
+        $userLike = false;
+        if (auth()->check()) {
+            $userLike = Like::where([
+                'likeable_type' => Image::class,
+                'likeable_id' => $image->id,
+                'user_id' => auth()->id(),
+            ])->exists();
+        }
 
         return Inertia::render('Images/Show', [
             'image' => [
@@ -355,7 +461,20 @@ class ImageController extends Controller
                 'is_published' => $image->is_published,
                 'created_at' => $image->created_at,
                 'owner' => $image->owner,
+                'owner_id' => $image->owner_id,
                 'album' => $image->album,
+                'tags' => $image->tags,
+                'collections' => $image->collections->map(function($collection) {
+    return [
+        'id' => $collection->id,
+        'title' => $collection->title,  
+        'slug' => $collection->slug,
+        'curator' => [
+            'id' => $collection->curator->id,
+            'name' => $collection->curator->name,
+        ]
+    ];
+}),
                 'exif_data' => $image->exif_data,
             ],
             'relatedImages' => $relatedImages->map(function ($img) {
@@ -368,6 +487,7 @@ class ImageController extends Controller
                 ];
             }),
             'comments' => $comments,
+            'userLike' => $userLike,
             'can' => [
                 'update' => auth()->user()?->can('update', $image) ?? false,
                 'delete' => auth()->user()?->can('delete', $image) ?? false,
@@ -384,7 +504,7 @@ class ImageController extends Controller
     {
         $this->authorize('update', $image);
 
-        $image->load(['album']);
+        $image->load(['album', 'tags']);
 
         return Inertia::render('Images/Edit', [
             'image' => [
@@ -399,8 +519,10 @@ class ImageController extends Controller
                 'album_id' => $image->album_id,
                 'allow_comments' => $image->allow_comments,
                 'allow_downloads' => $image->allow_downloads,
+                'tags' => $image->tags->pluck('name'),
             ],
             'albums' => auth()->user()->albums()->select('id', 'title')->get(),
+            'popularTags' => Tag::popular()->take(50)->get(),
         ]);
     }
 
@@ -420,6 +542,8 @@ class ImageController extends Controller
             'album_id' => 'nullable|exists:albums,id',
             'allow_comments' => 'boolean',
             'allow_downloads' => 'boolean',
+            'tags' => 'nullable|array',
+            'tags.*' => 'string|max:50',
         ]);
 
         // Verify album belongs to user
@@ -444,6 +568,23 @@ class ImageController extends Controller
             'published_at' => $request->privacy !== 'private' && !$image->is_published ? now() : $image->published_at,
         ]);
 
+        // Update tags
+        if ($request->has('tags')) {
+            $tagIds = [];
+            foreach ($request->tags as $tagName) {
+                if (!empty(trim($tagName))) {
+                    $tag = Tag::firstOrCreate(['name' => trim($tagName)]);
+                    $tagIds[] = $tag->id;
+                }
+            }
+            $image->tags()->sync($tagIds);
+            
+            // Update tag usage counts
+            Tag::whereIn('id', $tagIds)->each(function ($tag) {
+                $tag->updateUsageCount();
+            });
+        }
+
         return redirect()->route('images.show', $image)
             ->with('success', 'Image updated successfully.');
     }
@@ -464,7 +605,7 @@ class ImageController extends Controller
         // Update user storage usage
         $image->owner->decrementStorageUsage($image->size_bytes);
 
-        // Delete database records
+        // Delete database records (tags, likes, comments will be cascade deleted)
         $image->delete();
 
         // Update album image count
@@ -474,6 +615,42 @@ class ImageController extends Controller
 
         return redirect()->route('gallery.index')
             ->with('success', 'Image deleted successfully.');
+    }
+
+    /**
+     * Like/Unlike an image.
+     */
+    public function like(Image $image)
+    {
+        $this->authorize('view', $image);
+
+        $user = auth()->user();
+        
+        $existingLike = Like::where([
+            'likeable_type' => Image::class,
+            'likeable_id' => $image->id,
+            'user_id' => $user->id,
+        ])->first();
+
+        if ($existingLike) {
+            $existingLike->delete();
+            $image->decrement('likes_count');
+            $liked = false;
+        } else {
+            Like::create([
+                'likeable_type' => Image::class,
+                'likeable_id' => $image->id,
+                'user_id' => $user->id,
+                'user_ip' => request()->ip(),
+            ]);
+            $image->increment('likes_count');
+            $liked = true;
+        }
+
+        return response()->json([
+            'liked' => $liked,
+            'likes_count' => $image->fresh()->likes_count,
+        ]);
     }
 
     /**
@@ -524,5 +701,72 @@ class ImageController extends Controller
 
         return redirect()->back()
             ->with('success', $message);
+    }
+
+    // Private helper methods
+
+    /**
+     * Record a view for the image
+     */
+    private function recordView(Image $image, Request $request)
+    {
+        // Increment the image view count
+        $image->increment('views_count');
+
+        // Record in view_counts table for analytics
+        ViewCount::updateOrCreate(
+            [
+                'viewable_type' => Image::class,
+                'viewable_id' => $image->id,
+                'date' => now()->format('Y-m-d'),
+            ],
+            []
+        )->increment('count');
+    }
+
+    /**
+     * Get related images based on album or tags
+     */
+    private function getRelatedImages(Image $image)
+    {
+        $relatedQuery = Image::where('id', '!=', $image->id)
+            ->whereIn('privacy', ['public', 'unlisted'])
+            ->where('is_published', true);
+
+        // First, try to get images from the same album
+        if ($image->album_id) {
+            $albumRelated = $relatedQuery->clone()
+                ->where('album_id', $image->album_id)
+                ->take(6)
+                ->get();
+            
+            if ($albumRelated->count() >= 3) {
+                return $albumRelated;
+            }
+        }
+
+        // If not enough from album, get images with similar tags
+        if ($image->tags->isNotEmpty()) {
+            $tagIds = $image->tags->pluck('id');
+            $tagRelated = $relatedQuery->clone()
+                ->whereHas('tags', function ($query) use ($tagIds) {
+                    $query->whereIn('tags.id', $tagIds);
+                })
+                ->withCount(['tags' => function ($query) use ($tagIds) {
+                    $query->whereIn('tags.id', $tagIds);
+                }])
+                ->orderByDesc('tags_count')
+                ->take(6)
+                ->get();
+            
+            return $tagRelated;
+        }
+
+        // Fallback to recent images from the same owner
+        return $relatedQuery->clone()
+            ->where('owner_id', $image->owner_id)
+            ->latest()
+            ->take(6)
+            ->get();
     }
 }

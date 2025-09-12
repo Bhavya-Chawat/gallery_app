@@ -5,7 +5,7 @@
         <!-- Brand -->
         <div class="space-y-8 xl:col-span-1">
           <div class="text-xl font-bold text-gray-900">
-            {{ $page.props.app?.name || 'Gallery' }}
+            Gallery
           </div>
           <p class="text-gray-500 text-base">
             A modern, responsive image gallery built with Laravel and Vue.js.
@@ -45,22 +45,22 @@
                 Account
               </h3>
               <ul class="mt-4 space-y-4">
-                <li v-if="!$page.props.auth.user">
+                <li v-if="!user">
                   <Link :href="route('login')" class="text-base text-gray-500 hover:text-gray-900">
                     Sign In
                   </Link>
                 </li>
-                <li v-if="!$page.props.auth.user && $page.props.canRegister">
+                <li v-if="!user && canRegister">
                   <Link :href="route('register')" class="text-base text-gray-500 hover:text-gray-900">
                     Register
                   </Link>
                 </li>
-                <li v-if="$page.props.auth.user">
+                <li v-if="user">
                   <Link :href="route('dashboard')" class="text-base text-gray-500 hover:text-gray-900">
                     Dashboard
                   </Link>
                 </li>
-                <li v-if="$page.props.auth.user">
+                <li v-if="user">
                   <Link :href="route('profile.edit')" class="text-base text-gray-500 hover:text-gray-900">
                     Profile
                   </Link>
@@ -114,7 +114,7 @@
 
       <div class="mt-12 border-t border-gray-200 pt-8">
         <p class="text-base text-gray-400 xl:text-center">
-          &copy; {{ new Date().getFullYear() }} {{ $page.props.app?.name || 'Gallery' }}. All rights reserved.
+          &copy; {{ new Date().getFullYear() }} Gallery. All rights reserved.
         </p>
       </div>
     </div>
@@ -122,6 +122,18 @@
 </template>
 
 <script setup>
-import { Link } from '@inertiajs/vue3'
+import { computed } from 'vue'
+import { Link, usePage } from '@inertiajs/vue3'
 import route from 'ziggy-js'
+
+const page = usePage()
+
+// Safe computed properties with null checks
+const user = computed(() => {
+  return page.props?.auth?.user || null
+})
+
+const canRegister = computed(() => {
+  return page.props?.canRegister ?? true
+})
 </script>

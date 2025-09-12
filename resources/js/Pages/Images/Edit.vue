@@ -235,7 +235,7 @@ import InputError from '@/Components/InputError.vue'
 import InputLabel from '@/Components/InputLabel.vue'
 import PrimaryButton from '@/Components/PrimaryButton.vue'
 import TextInput from '@/Components/TextInput.vue'
-import TagInput from '@/Components/TagInput.vue'
+import TagInput from '@/Components/TagsInput.vue'
 
 const props = defineProps({
   image: Object,

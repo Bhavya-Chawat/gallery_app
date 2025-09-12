@@ -84,13 +84,21 @@
                 <!-- Action Buttons -->
                 <div class="ml-6 flex items-center space-x-3">
                   <!-- Like Button -->
+                  <LikeButton
+                    likeable-type="App\Models\Image"
+                    :likeable-id="image.id.toString()"
+                    :initial-liked="userLike"
+                    :initial-likes-count="image.likes_count"
+                  />
+
+                  <!-- Add to Collection Button -->
                   <button
-                    @click="toggleLike"
+                    v-if="auth.user && auth.user.id !== image.owner_id"
+                    @click="showCollectionModal = true"
                     class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-                    :class="{ 'text-red-600 border-red-300 bg-red-50': isLiked }"
                   >
-                    <HeartIcon class="h-4 w-4 mr-2" :class="{ 'fill-current': isLiked }" />
-                    {{ currentLikeCount }}
+                    <FolderPlusIcon class="h-4 w-4 mr-2" />
+                    Add to Collection
                   </button>
 
                   <!-- Share Button -->
@@ -102,14 +110,13 @@
                         <ChevronDownIcon class="ml-2 h-4 w-4" />
                       </button>
                     </template>
-<template #content>
-  <DropdownLink @click="copyLink">Copy Link</DropdownLink>
-  <DropdownLink @click="shareImage">Share via...</DropdownLink>
-  <div class="border-t border-gray-100" v-if="can.download"></div>
-  <DropdownLink @click="downloadImage" v-if="can.download">Download Original</DropdownLink>
-  <DropdownLink @click="downloadWithWatermark" v-if="can.download">Download with Watermark</DropdownLink>
-</template>
-
+                    <template #content>
+                      <DropdownLink @click="copyLink">Copy Link</DropdownLink>
+                      <DropdownLink @click="shareImage">Share via...</DropdownLink>
+                      <div class="border-t border-gray-100" v-if="can.download"></div>
+                      <DropdownLink @click="downloadImage" v-if="can.download">Download Original</DropdownLink>
+                      <DropdownLink @click="downloadWithWatermark" v-if="can.download">Download with Watermark</DropdownLink>
+                    </template>
                   </Dropdown>
 
                   <!-- Edit/Admin Actions -->
@@ -142,10 +149,26 @@
                   <Link
                     v-for="tag in image.tags"
                     :key="tag.id"
-<!--                     :href="route('tags.show', tag.slug)" -->
-                    class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200"
+                    :href="route('search') + '?tag=' + encodeURIComponent(tag.name)"
+                    class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
                   >
-                    {{ tag.name }}
+                    #{{ tag.name }}
+                  </Link>
+                </div>
+              </div>
+
+              <!-- Collections this image belongs to -->
+              <div v-if="image.collections && image.collections.length" class="mt-6">
+                <h3 class="text-sm font-medium text-gray-900 mb-2">Collections</h3>
+                <div class="flex flex-wrap gap-2">
+                  <Link
+                    v-for="collection in image.collections"
+                    :key="collection.id"
+                    :href="route('collections.show', collection.id)"
+                    class="inline-flex items-center px-3 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-800 hover:bg-gray-200 transition-colors"
+                  >
+                    <FolderIcon class="h-3 w-3 mr-1" />
+                    {{ collection.title }}
                   </Link>
                 </div>
               </div>
@@ -157,7 +180,7 @@
                   <div class="text-sm text-gray-500">Views</div>
                 </div>
                 <div>
-                  <div class="text-2xl font-bold text-gray-900">{{ formatNumber(currentLikeCount) }}</div>
+                  <div class="text-2xl font-bold text-gray-900">{{ formatNumber(image.likes_count) }}</div>
                   <div class="text-sm text-gray-500">Likes</div>
                 </div>
                 <div>
@@ -176,46 +199,98 @@
               <!-- Add Comment Form -->
               <div v-if="can.comment" class="mb-6">
                 <form @submit.prevent="submitComment" class="space-y-4">
-                  <textarea
-                    v-model="newComment"
-                    rows="3"
-                    class="w-full border border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    placeholder="Write a comment..."
-                    required
-                  ></textarea>
-                  <button
-                    type="submit"
-                    :disabled="submittingComment || !newComment.trim()"
-                    class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
-                  >
-                    {{ submittingComment ? 'Posting...' : 'Post Comment' }}
-                  </button>
+                  <div class="flex items-start space-x-3">
+                    <UserAvatar :user="auth.user" size="sm" />
+                    <div class="flex-1">
+                      <textarea
+                        v-model="newComment"
+                        rows="3"
+                        class="w-full border border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 resize-none"
+                        placeholder="Write a comment..."
+                        required
+                      ></textarea>
+                      <div class="mt-2 flex justify-between items-center">
+                        <span class="text-sm text-gray-500">
+                          {{ newComment.length }}/1000 characters
+                        </span>
+                        <button
+                          type="submit"
+                          :disabled="submittingComment || !newComment.trim() || newComment.length > 1000"
+                          class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {{ submittingComment ? 'Posting...' : 'Post Comment' }}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </form>
               </div>
 
               <!-- Comments List -->
-              <div class="space-y-4">
+              <div class="space-y-6">
                 <div
                   v-for="comment in currentComments"
                   :key="comment.id"
-                  class="border-l-4 border-gray-200 pl-4"
+                  class="flex items-start space-x-3"
                 >
-                  <div class="flex items-start space-x-3">
-                    <UserAvatar :user="comment.user" size="sm" />
-                    <div class="flex-1 min-w-0">
-                      <div class="flex items-center space-x-2">
+                  <UserAvatar :user="comment.user" size="sm" />
+                  <div class="flex-1 min-w-0">
+                    <div class="bg-gray-50 rounded-lg px-4 py-3">
+                      <div class="flex items-center justify-between mb-1">
                         <span class="text-sm font-medium text-gray-900">{{ comment.user.name }}</span>
                         <span class="text-xs text-gray-500">{{ formatDate(comment.created_at) }}</span>
                       </div>
-                      <p class="mt-1 text-sm text-gray-700">{{ comment.body }}</p>
+                      <p class="text-sm text-gray-700 whitespace-pre-wrap">{{ comment.body }}</p>
+                    </div>
+                    
+                    <!-- Comment Actions -->
+                    <div class="mt-2 flex items-center space-x-4 text-xs text-gray-500">
+                      <button
+                        v-if="auth.user"
+                        @click="toggleCommentLike(comment)"
+                        class="hover:text-red-500 transition-colors"
+                        :class="{ 'text-red-500': comment.user_has_liked }"
+                      >
+                        <HeartIcon class="h-3 w-3 inline mr-1" :class="{ 'fill-current': comment.user_has_liked }" />
+                        {{ comment.likes_count || 0 }}
+                      </button>
+                      
+                      <button
+                        v-if="auth.user"
+                        @click="replyToComment(comment)"
+                        class="hover:text-blue-500 transition-colors"
+                      >
+                        Reply
+                      </button>
+                      
+                      <button
+                        v-if="can.moderate || comment.user.id === auth.user?.id"
+                        @click="deleteComment(comment)"
+                        class="hover:text-red-500 transition-colors"
+                      >
+                        Delete
+                      </button>
                     </div>
                   </div>
                 </div>
               </div>
 
+              <!-- Load More Comments -->
+              <div v-if="hasMoreComments" class="mt-6 text-center">
+                <button
+                  @click="loadMoreComments"
+                  :disabled="loadingComments"
+                  class="px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-500 disabled:opacity-50"
+                >
+                  {{ loadingComments ? 'Loading...' : 'Load More Comments' }}
+                </button>
+              </div>
+
               <!-- No Comments State -->
-              <div v-if="currentComments.length === 0" class="text-center py-6">
-                <p class="text-gray-500">No comments yet. Be the first to comment!</p>
+              <div v-if="currentComments.length === 0" class="text-center py-8">
+                <ChatBubbleOvalLeftIcon class="mx-auto h-12 w-12 text-gray-400" />
+                <h3 class="mt-2 text-sm font-medium text-gray-900">No comments yet</h3>
+                <p class="mt-1 text-sm text-gray-500">Be the first to share your thoughts!</p>
               </div>
             </div>
           </div>
@@ -284,8 +359,9 @@
                   </div>
                   <button
                     @click="downloadVersion(version)"
-                    class="text-blue-600 hover:text-blue-500 text-sm font-medium"
+                    class="text-blue-600 hover:text-blue-500 text-sm font-medium flex items-center"
                   >
+                    <ArrowDownTrayIcon class="h-4 w-4 mr-1" />
                     Download
                   </button>
                 </div>
@@ -314,11 +390,19 @@
         </div>
       </div>
     </div>
+
+    <!-- Add to Collection Modal -->
+    <CollectionModal
+      :show="showCollectionModal"
+      :image="image"
+      @close="showCollectionModal = false"
+      @added="onAddedToCollection"
+    />
   </AppLayout>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch  } from 'vue'
 import { Head, Link, router } from '@inertiajs/vue3'
 import route from 'ziggy-js'
 import {
@@ -327,12 +411,18 @@ import {
   HeartIcon,
   ShareIcon,
   EllipsisVerticalIcon,
+  FolderIcon,
+  FolderPlusIcon,
+  ChatBubbleOvalLeftIcon,
+  ArrowDownTrayIcon,
 } from '@heroicons/vue/24/outline'
 
 import AppLayout from '@/Layouts/AppLayout.vue'
 import UserAvatar from '@/Components/UserAvatar.vue'
 import Dropdown from '@/Components/Dropdown.vue'
 import DropdownLink from '@/Components/DropdownLink.vue'
+import LikeButton from '@/Components/LikeButton.vue'
+import CollectionModal from '@/Components/CollectionModal.vue'
 
 const props = defineProps({
   image: { type: Object, default: () => ({}) },
@@ -344,14 +434,15 @@ const props = defineProps({
   errors: { type: Object, default: () => ({}) },
 })
 
-const isLiked = ref(props.userLike)
 const imageError = ref(false)
 const newComment = ref('')
 const submittingComment = ref(false)
 const currentComments = ref([...props.comments])
+const showCollectionModal = ref(false)
+const loadingComments = ref(false)
+const hasMoreComments = ref(false)
 
 // Reactive counters
-const currentLikeCount = ref(props.image.likes_count)
 const currentCommentCount = computed(() => currentComments.value.length)
 
 const formatNumber = (number) => {
@@ -413,39 +504,23 @@ const handleImageError = () => {
   imageError.value = true
 }
 
-const toggleLike = async () => {
-  if (!props.auth.user) return
-  
-  try {
-    await router.post(route('images.like', props.image.slug), {}, {
-      preserveState: true,
-      preserveScroll: true,
-    })
-    isLiked.value = !isLiked.value
-    currentLikeCount.value += isLiked.value ? 1 : -1
-  } catch (error) {
-    console.error('Failed to toggle like:', error)
-  }
-}
-
 const submitComment = async () => {
   if (!newComment.value.trim()) return
   
   submittingComment.value = true
   try {
-    const response = await router.post(`/images/${props.image.slug}/comments`, {
+    const response = await axios.post(`/images/${props.image.slug}/comments`, {
       body: newComment.value
-    }, {
-      preserveState: true,
-      preserveScroll: true,
     })
     
     // Add comment locally for immediate feedback
     currentComments.value.unshift({
-      id: Date.now(),
+      id: response.data.comment.id,
       body: newComment.value,
       user: props.auth.user,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      likes_count: 0,
+      user_has_liked: false,
     })
     
     newComment.value = ''
@@ -454,6 +529,47 @@ const submitComment = async () => {
   } finally {
     submittingComment.value = false
   }
+}
+
+const toggleCommentLike = async (comment) => {
+  try {
+    const response = await axios.post(route('likes.toggle'), {
+      likeable_type: 'App\\Models\\Comment',
+      likeable_id: comment.id.toString(),
+    })
+    
+    comment.user_has_liked = response.data.liked
+    comment.likes_count = response.data.likes_count
+  } catch (error) {
+    console.error('Failed to toggle comment like:', error)
+  }
+}
+
+const replyToComment = (comment) => {
+  newComment.value = `@${comment.user.name} `
+  document.querySelector('textarea').focus()
+}
+
+const deleteComment = async (comment) => {
+  if (!confirm('Are you sure you want to delete this comment?')) return
+  
+  try {
+    await axios.delete(`/comments/${comment.id}`)
+    const index = currentComments.value.findIndex(c => c.id === comment.id)
+    if (index > -1) {
+      currentComments.value.splice(index, 1)
+    }
+  } catch (error) {
+    console.error('Failed to delete comment:', error)
+  }
+}
+
+const onAddedToCollection = (collection) => {
+  // Update image collections if needed
+  if (!props.image.collections) {
+    props.image.collections = []
+  }
+  props.image.collections.push(collection)
 }
 
 const copyLink = () => {
@@ -476,7 +592,6 @@ const shareImage = () => {
 }
 
 const downloadImage = () => {
-  // Create a hidden link to force download
   const link = document.createElement('a')
   link.href = route('images.download', props.image.slug)
   link.download = props.image.original_filename || 'image'
@@ -496,7 +611,6 @@ const downloadVersion = (version) => {
   document.body.removeChild(link)
 }
 
-// Add watermark download option
 const downloadWithWatermark = () => {
   const link = document.createElement('a')
   link.href = route('images.download', [props.image.slug, { watermark: 1 }])
@@ -506,7 +620,6 @@ const downloadWithWatermark = () => {
   link.click()
   document.body.removeChild(link)
 }
-
 
 const togglePublish = () => {
   router.post(route('images.toggle-publish', props.image.slug))

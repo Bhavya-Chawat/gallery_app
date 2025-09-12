@@ -1,16 +1,17 @@
 <template>
-  <div :class="sizeClasses">
-    <img
-      v-if="user.avatar_path"
-      :src="avatarUrl"
+  <div 
+    :class="[
+      'inline-flex items-center justify-center rounded-full bg-gray-500 text-white font-medium',
+      sizeClasses
+    ]"
+  >
+    <img 
+      v-if="user.avatar_url" 
+      :src="user.avatar_url" 
       :alt="user.name"
-      class="w-full h-full object-cover rounded-full"
+      class="w-full h-full rounded-full object-cover"
     />
-    <div v-else class="w-full h-full bg-gray-300 rounded-full flex items-center justify-center">
-      <span :class="textSizeClasses" class="font-medium text-gray-600">
-        {{ initials }}
-      </span>
-    </div>
+    <span v-else>{{ initials }}</span>
   </div>
 </template>
 
@@ -18,51 +19,25 @@
 import { computed } from 'vue'
 
 const props = defineProps({
-  user: {
-    type: Object,
-    required: true,
-  },
-  size: {
-    type: String,
-    default: 'md',
-    validator: (value) => ['xs', 'sm', 'md', 'lg', 'xl'].includes(value),
-  },
+  user: { type: Object, required: true },
+  size: { type: String, default: 'md' }, // sm, md, lg
 })
 
 const sizeClasses = computed(() => {
-  const sizes = {
-    xs: 'h-6 w-6',
-    sm: 'h-8 w-8',
-    md: 'h-10 w-10',
-    lg: 'h-16 w-16',
-    xl: 'h-20 w-20',
+  switch (props.size) {
+    case 'sm': return 'w-6 h-6 text-xs'
+    case 'lg': return 'w-12 h-12 text-lg'
+    default: return 'w-8 h-8 text-sm'
   }
-  return sizes[props.size]
-})
-
-const textSizeClasses = computed(() => {
-  const sizes = {
-    xs: 'text-xs',
-    sm: 'text-sm',
-    md: 'text-base',
-    lg: 'text-xl',
-    xl: 'text-2xl',
-  }
-  return sizes[props.size]
-})
-
-const avatarUrl = computed(() => {
-  return props.user.avatar_path 
-    ? `http://localhost:9000/gallery-images/${props.user.avatar_path}`
-    : null
 })
 
 const initials = computed(() => {
-  return props.user.name
-    ?.split(' ')
-    .map(word => word[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase() || '??'
+  if (!props.user?.name) return '?'
+  
+  const names = props.user.name.split(' ')
+  if (names.length >= 2) {
+    return (names[0][0] + names[1][0]).toUpperCase()
+  }
+  return names[0][0].toUpperCase()
 })
 </script>
