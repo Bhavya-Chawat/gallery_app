@@ -11,8 +11,7 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
-// Guest routes (no middleware - simpler approach)
-Route::group([], function () {
+Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
         ->name('register');
 
@@ -36,17 +35,16 @@ Route::group([], function () {
         ->name('password.store');
 });
 
-// Authenticated routes
-Route::middleware([\Illuminate\Auth\Middleware\Authenticate::class])->group(function () {
+Route::middleware('auth')->group(function () {
     Route::get('verify-email', EmailVerificationPromptController::class)
         ->name('verification.notice');
 
     Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
-        ->middleware([\Illuminate\Routing\Middleware\ValidateSignature::class, \Illuminate\Routing\Middleware\ThrottleRequests::class.':6,1'])
+        ->middleware(['signed', 'throttle:6,1'])
         ->name('verification.verify');
 
     Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
-        ->middleware([\Illuminate\Routing\Middleware\ThrottleRequests::class.':6,1'])
+        ->middleware('throttle:6,1')
         ->name('verification.send');
 
     Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])

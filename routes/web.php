@@ -171,7 +171,7 @@ Route::get('/terms', function () {
 require __DIR__.'/auth.php';
 
 // Authenticated routes (optional features)
-Route::middleware([\Illuminate\Auth\Middleware\Authenticate::class])->group(function () {
+Route::middleware(['auth'])->group(function () {
     
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -286,7 +286,7 @@ Route::middleware([\Illuminate\Auth\Middleware\Authenticate::class])->group(func
 });
 
 // Admin Routes
-Route::middleware([\Illuminate\Auth\Middleware\Authenticate::class])->prefix('admin')->name('admin.')->group(function () {
+Route::prefix('admin')->name('admin.')->group(function () {
     
     // System Routes
     Route::get('/', [SystemController::class, 'index'])->name('system.index');
