@@ -170,16 +170,26 @@
         grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
     }
     
+    /* Fixed image-card classes */
     .image-card {
-        @apply gallery-card group cursor-pointer;
+        @apply gallery-card cursor-pointer relative;
     }
     
     .image-card-overlay {
-        @apply absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300;
+        @apply absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-0 transition-opacity duration-300;
     }
     
     .image-card-info {
-        @apply absolute bottom-0 left-0 right-0 p-4 text-white transform translate-y-full group-hover:translate-y-0 transition-transform duration-300;
+        @apply absolute bottom-0 left-0 right-0 p-4 text-white transform translate-y-full transition-transform duration-300;
+    }
+
+    /* Add hover states without group dependency */
+    .image-card:hover .image-card-overlay {
+        @apply opacity-100;
+    }
+
+    .image-card:hover .image-card-info {
+        @apply translate-y-0;
     }
     
     /* Upload styles */

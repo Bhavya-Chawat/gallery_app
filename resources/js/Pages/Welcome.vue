@@ -1,6 +1,5 @@
 <template>
-  <!-- <GuestLayout> -->
-    <div style="margin: 0; padding: 0;"></div>
+  <div style="margin: 0; padding: 0;" class="min-h-screen">
     <!-- Enhanced Animated Background -->
     <div class="fixed inset-0 overflow-hidden">
       <!-- Base Background -->
@@ -54,7 +53,7 @@
     </div>
 
     <!-- Premium Navigation Bar -->
-    <nav class="relative z-50 bg-white/5 backdrop-blur-xl border-b border-white/10">
+    <nav class="relative z-50 bg-white/5 backdrop-blur-xl border-b border-white/10 mb-0">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-16">
           <!-- Logo -->
@@ -64,7 +63,7 @@
                 <PhotoIcon class="h-6 w-6 text-white" />
               </div>
               <span class="text-xl font-bold bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent">
-                Visual Gallery
+                Clone Fest Gallery
               </span>
             </Link>
           </div>
@@ -151,30 +150,46 @@
     </nav>
 
     <!-- Hero Section -->
-    <div class="relative z-10 min-h-screen flex items-center pt-16">
+    <div class="relative z-10 min-h-screen flex items-center pt-0">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div class="grid lg:grid-cols-2 gap-12 items-center">
           
           <!-- Hero Content -->
           <div class="text-center lg:text-left animate-fade-in-up">
             <div class="mb-8">
-              <h1 class="text-6xl lg:text-7xl font-extrabold leading-tight">
+              <!-- Clone Fest Badge -->
+              <div class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-violet-500/20 to-cyan-500/20 border border-violet-500/30 rounded-full mb-6 animate-pulse">
+                <span class="text-sm font-semibold text-violet-300">🏆 Clone Fest Week 2 Project</span>
+              </div>
+              
+              <h1 class="text-5xl lg:text-6xl font-extrabold leading-tight">
                 <span class="block bg-gradient-to-r from-violet-400 via-white to-cyan-400 bg-clip-text text-transparent animate-shimmer bg-size-200 bg-pos-0">
-                  Visual
+                  Modern Visual
                 </span>
                 <span class="block bg-gradient-to-r from-cyan-500 via-purple-500 to-violet-500 bg-clip-text text-transparent mt-2 animate-shimmer bg-size-200 bg-pos-0 animation-delay-1000">
-                  Gallery
+                  Gallery Platform
                 </span>
               </h1>
               <div class="h-1 w-32 bg-gradient-to-r from-violet-500 to-cyan-500 mx-auto lg:mx-0 mt-4 rounded-full animate-pulse"></div>
             </div>
 
-            <p class="text-xl text-slate-300 mb-8 max-w-xl mx-auto lg:mx-0 leading-relaxed animate-fade-in-up animation-delay-500">
+            <p class="text-xl text-slate-300 mb-6 max-w-xl mx-auto lg:mx-0 leading-relaxed animate-fade-in-up animation-delay-500">
               {{ auth.user 
-                ? `Welcome back, ${auth.user.name}! Continue exploring and sharing your amazing photography.`
-                : 'Discover, share, and organize your photos in a stunning, modern gallery. Experience seamless image management with powerful features and beautiful design.'
+                ? `Welcome back, ${auth.user.name}! Continue exploring our modernized gallery platform.`
+                : 'Experience the evolution from classic PHP to modern Laravel 10 + Inertia.js + Vue 3. A complete media platform with extensible architecture.'
               }}
             </p>
+
+            <!-- Tech Stack Display -->
+            <div class="flex flex-wrap justify-center lg:justify-start gap-3 mb-8 animate-fade-in-up animation-delay-700">
+              <span class="px-3 py-1 bg-red-500/20 text-red-300 rounded-full text-sm font-medium border border-red-500/30">Laravel 10</span>
+              <span class="px-3 py-1 bg-green-500/20 text-green-300 rounded-full text-sm font-medium border border-green-500/30">Vue 3</span>
+              <span class="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm font-medium border border-purple-500/30">Inertia.js</span>
+              <span class="px-3 py-1 bg-cyan-500/20 text-cyan-300 rounded-full text-sm font-medium border border-cyan-500/30">Tailwind CSS</span>
+              <span class="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-sm font-medium border border-blue-500/30">PostgreSQL</span>
+              <span class="px-3 py-1 bg-yellow-500/20 text-yellow-300 rounded-full text-sm font-medium border border-yellow-500/30">Redis</span>
+              <span class="px-3 py-1 bg-orange-500/20 text-orange-300 rounded-full text-sm font-medium border border-orange-500/30">S3/CDN</span>
+            </div>
 
             <!-- Enhanced CTA Buttons -->
             <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start animate-fade-in-up animation-delay-1000">
@@ -196,7 +211,7 @@
                   class="group px-8 py-4 bg-white/10 backdrop-blur-xl border border-white/20 text-slate-200 font-semibold rounded-2xl hover:bg-white/20 hover:border-violet-400/50 hover:scale-105 transition-all duration-300"
                 >
                   <span class="flex items-center justify-center">
-                    Upload Photos
+                    Upload Media
                     <PhotoIcon class="ml-2 h-5 w-5 group-hover:rotate-12 transition-transform duration-300" />
                   </span>
                 </Link>
@@ -210,7 +225,7 @@
                 >
                   <div class="absolute inset-0 bg-gradient-to-r from-cyan-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                   <span class="relative flex items-center justify-center">
-                    Browse Gallery
+                    Explore Platform
                     <PhotoIcon class="ml-2 h-5 w-5 group-hover:rotate-12 transition-transform duration-300" />
                   </span>
                 </Link>
@@ -221,7 +236,7 @@
                   class="group px-8 py-4 bg-white/10 backdrop-blur-xl border border-white/20 text-slate-200 font-semibold rounded-2xl hover:bg-white/20 hover:border-violet-400/50 hover:scale-105 transition-all duration-300"
                 >
                   <span class="flex items-center justify-center">
-                    Get Started
+                    Join Platform
                     <ArrowRightIcon class="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
                   </span>
                 </Link>
@@ -272,19 +287,68 @@
       </div>
     </div>
 
-    <!-- Featured Images Section -->
-    <div class="relative z-10 py-24 animate-fade-in-up" v-if="featuredImages.length > 0">
+    <!-- Team Section -->
+    <div class="relative z-10 py-0 animate-fade-in-up">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center mb-16">
           <h2 class="text-4xl font-extrabold bg-gradient-to-r from-violet-400 via-white to-cyan-400 bg-clip-text text-transparent mb-4 animate-shimmer bg-size-200 bg-pos-0">
-            Trending Captures
+            Clone Fest Week 2 Team
           </h2>
           <p class="text-lg text-slate-300 max-w-2xl mx-auto">
-            Discover breathtaking photography from our vibrant community
+            Revolutionizing classic PHP galleries with modern technology stack
           </p>
         </div>
 
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-24">
+          <div class="group bg-slate-800/30 backdrop-blur-xl border border-white/10 rounded-3xl p-8 hover:border-violet-400/40 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-violet-500/20">
+            <div class="w-20 h-20 bg-gradient-to-r from-violet-500 to-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <svg class="h-10 w-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.618 5.984A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.031 9-11.622 0-1.042-.133-2.052-.382-3.016zM12 9v2m0 4h.01"/>
+              </svg>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2 text-center">Bhavya Chawat</h3>
+            <p class="text-violet-300 font-medium text-center mb-4">Database & Backend</p>
+            <p class="text-slate-300 text-center">Laravel 10 architecture, PostgreSQL optimization, Redis caching, S3 integration</p>
+          </div>
+
+          <div class="group bg-slate-800/30 backdrop-blur-xl border border-white/10 rounded-3xl p-8 hover:border-cyan-400/40 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-cyan-500/20">
+            <div class="w-20 h-20 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <svg class="h-10 w-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4h4a2 2 0 002-2V5z"/>
+              </svg>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2 text-center">Kruthi Krishna</h3>
+            <p class="text-cyan-300 font-medium text-center mb-4">Frontend & Bonus Features</p>
+            <p class="text-slate-300 text-center">Vue 3 components, Inertia.js integration, Tailwind UI, responsive design</p>
+          </div>
+
+          <div class="group bg-slate-800/30 backdrop-blur-xl border border-white/10 rounded-3xl p-8 hover:border-purple-400/40 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/20">
+            <div class="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <svg class="h-10 w-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+              </svg>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2 text-center">Shreyas Sahoo</h3>
+            <p class="text-purple-300 font-medium text-center mb-4">Documentation & Strategy</p>
+            <p class="text-slate-300 text-center">Technical documentation, project strategy, API documentation, deployment guides</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Featured Images Section -->
+    <div class="relative z-10 py-0 animate-fade-in-up" v-if="featuredImages.length > 0">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16">
+          <h2 class="text-4xl font-extrabold bg-gradient-to-r from-violet-400 via-white to-cyan-400 bg-clip-text text-transparent mb-4 animate-shimmer bg-size-200 bg-pos-0">
+            Platform Showcase
+          </h2>
+          <p class="text-lg text-slate-300 max-w-2xl mx-auto">
+            Experience the power of our modern media management platform
+          </p>
+        </div>
+
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-24">
           <div
             v-for="(image, index) in featuredImages"
             :key="image.id"
@@ -313,12 +377,12 @@
           </div>
         </div>
 
-        <div class="text-center mt-12">
+        <div class="text-center">
           <Link
             :href="route('gallery.index')"
             class="group inline-flex items-center px-8 py-4 bg-white/5 backdrop-blur-xl border border-white/20 text-slate-200 font-semibold rounded-2xl hover:bg-white/10 hover:border-violet-400/50 hover:scale-105 transition-all duration-300"
           >
-            Explore All Images
+            Explore Full Platform
             <ArrowRightIcon class="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
           </Link>
         </div>
@@ -326,18 +390,18 @@
     </div>
 
     <!-- Featured Albums Section -->
-    <div class="relative z-10 py-24 animate-fade-in-up" v-if="featuredAlbums.length > 0">
+    <div class="relative z-10 py-0 animate-fade-in-up" v-if="featuredAlbums.length > 0">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center mb-16">
           <h2 class="text-4xl font-extrabold bg-gradient-to-r from-cyan-400 via-purple-400 to-violet-400 bg-clip-text text-transparent mb-4 animate-shimmer bg-size-200 bg-pos-0">
-            Featured Collections
+            Media Collections
           </h2>
           <p class="text-lg text-slate-300 max-w-2xl mx-auto">
-            Curated albums showcasing exceptional visual stories
+            Organized media galleries powered by modern architecture
           </p>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-24">
           <div
             v-for="(album, index) in featuredAlbums"
             :key="album.id"
@@ -360,7 +424,7 @@
               <h3 class="text-xl font-semibold text-white mb-2 truncate">
                 {{ album.title }}
               </h3>
-              <p class="text-slate-300 text-sm mb-4 line-clamp-2">
+              <p class="text-slate-300 text-sm mb-4">
                 {{ album.description }}
               </p>
               
@@ -379,12 +443,12 @@
           </div>
         </div>
 
-        <div class="text-center mt-12">
+        <div class="text-center">
           <Link
             :href="route('albums.index')"
             class="group inline-flex items-center px-8 py-4 bg-white/5 backdrop-blur-xl border border-white/20 text-slate-200 font-semibold rounded-2xl hover:bg-white/10 hover:border-violet-400/50 hover:scale-105 transition-all duration-300"
           >
-            Browse All Albums
+            Browse All Collections
             <ArrowRightIcon class="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
           </Link>
         </div>
@@ -392,20 +456,20 @@
     </div>
 
     <!-- Final CTA Section -->
-    <div class="relative z-10 py-24 animate-fade-in-up" v-if="!auth.user">
+    <div class="relative z-10 py-0 animate-fade-in-up" v-if="!auth.user">
       <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <div class="bg-white/5 backdrop-blur-xl border border-white/20 rounded-3xl p-12 shadow-2xl hover:bg-white/10 transition-all duration-500">
+        <div class="bg-white/5 backdrop-blur-xl border border-white/20 rounded-3xl p-12 shadow-2xl hover:bg-white/10 transition-all duration-500 mb-0">
           <h2 class="text-4xl font-extrabold mb-6">
             <span class="block bg-gradient-to-r from-violet-400 via-white to-cyan-400 bg-clip-text text-transparent animate-shimmer bg-size-200 bg-pos-0">
-              Ready to showcase
+              Experience the Evolution
             </span>
             <span class="block bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent mt-2 animate-shimmer bg-size-200 bg-pos-0 animation-delay-1000">
-              your visual story?
+              From Classic to Modern
             </span>
           </h2>
           
           <p class="text-xl text-slate-300 mb-10 max-w-2xl mx-auto">
-            Join our community and start sharing your amazing photography today
+            Join our Clone Fest Week 2 demonstration of transforming legacy PHP galleries into scalable, modern web applications
           </p>
 
           <div class="flex flex-col sm:flex-row gap-4 justify-center">
@@ -416,7 +480,7 @@
             >
               <div class="absolute inset-0 bg-gradient-to-r from-cyan-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               <span class="relative flex items-center justify-center">
-                Create Account
+                Join the Platform
                 <ArrowRightIcon class="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
               </span>
             </Link>
@@ -425,7 +489,7 @@
               :href="canLogin ? route('login') : route('gallery.index')"
               class="group px-10 py-5 bg-white/10 backdrop-blur-xl border-2 border-white/20 text-slate-200 font-bold rounded-2xl hover:bg-white/20 hover:border-violet-400 hover:scale-105 transition-all duration-300 text-lg"
             >
-              {{ canLogin ? 'Sign In' : 'Explore Gallery' }}
+              {{ canLogin ? 'Sign In' : 'Explore Platform' }}
             </Link>
           </div>
         </div>
@@ -433,7 +497,7 @@
     </div>
 
     <!-- Footer -->
-    <footer class="relative z-10 bg-white/5 backdrop-blur-xl border-t border-white/10 mt-24">
+    <footer class="relative z-10 bg-white/5 backdrop-blur-xl border-t border-white/10 mt-0">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
           
@@ -444,18 +508,24 @@
                 <PhotoIcon class="h-6 w-6 text-white" />
               </div>
               <span class="text-xl font-bold bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent">
-                Visual Gallery
+                Clone Fest Gallery
               </span>
             </div>
-            <p class="text-slate-400 mb-6 max-w-md">
-              A modern platform for discovering, sharing, and organizing beautiful photography. 
-              Join our community of visual storytellers today.
+            <p class="text-slate-400 mb-4 max-w-md">
+              Clone Fest Week 2 project demonstrating the modernization of classic PHP image galleries using Laravel 10, Vue 3, Inertia.js, and cutting-edge web technologies.
             </p>
+            <div class="flex flex-wrap gap-2 mb-6">
+              <span class="px-2 py-1 bg-red-500/10 text-red-400 rounded text-xs border border-red-500/20">Laravel 10</span>
+              <span class="px-2 py-1 bg-green-500/10 text-green-400 rounded text-xs border border-green-500/20">Vue 3</span>
+              <span class="px-2 py-1 bg-purple-500/10 text-purple-400 rounded text-xs border border-purple-500/20">Inertia.js</span>
+              <span class="px-2 py-1 bg-cyan-500/10 text-cyan-400 rounded text-xs border border-cyan-500/20">PostgreSQL</span>
+              <span class="px-2 py-1 bg-yellow-500/10 text-yellow-400 rounded text-xs border border-yellow-500/20">Redis</span>
+            </div>
           </div>
 
           <!-- Quick Links -->
           <div>
-            <h3 class="text-white font-semibold mb-4">Explore</h3>
+            <h3 class="text-white font-semibold mb-4">Platform</h3>
             <ul class="space-y-2">
               <li>
                 <Link :href="route('gallery.index')" class="text-slate-400 hover:text-white transition-colors duration-300">
@@ -464,7 +534,7 @@
               </li>
               <li>
                 <Link :href="route('albums.index')" class="text-slate-400 hover:text-white transition-colors duration-300">
-                  Albums
+                  Collections
                 </Link>
               </li>
               <li v-if="auth.user">
@@ -474,50 +544,52 @@
               </li>
               <li v-if="auth.user">
                 <Link :href="route('upload')" class="text-slate-400 hover:text-white transition-colors duration-300">
-                  Upload
+                  Upload Media
                 </Link>
               </li>
             </ul>
           </div>
 
-          <!-- Account -->
+          <!-- Team & Project -->
           <div>
-            <h3 class="text-white font-semibold mb-4">Account</h3>
-            <ul class="space-y-2">
+            <h3 class="text-white font-semibold mb-4">Clone Fest Team</h3>
+            <ul class="space-y-2 text-sm">
+              <li class="text-slate-400">
+                <span class="text-violet-400 font-medium">Bhavya Chawat</span><br>
+                Database & Backend
+              </li>
+              <li class="text-slate-400">
+                <span class="text-cyan-400 font-medium">Kruthi Krishna</span><br>
+                Frontend & Features
+              </li>
+              <li class="text-slate-400">
+                <span class="text-purple-400 font-medium">Shreyas Sahoo</span><br>
+                Documentation & Strategy
+              </li>
               <template v-if="!auth.user">
-                <li v-if="canLogin">
-                  <Link :href="route('login')" class="text-slate-400 hover:text-white transition-colors duration-300">
+                <li class="pt-2">
+                  <Link v-if="canLogin" :href="route('login')" class="text-slate-400 hover:text-white transition-colors duration-300 text-xs">
                     Sign In
                   </Link>
                 </li>
                 <li v-if="canRegister">
-                  <Link :href="route('register')" class="text-slate-400 hover:text-white transition-colors duration-300">
+                  <Link :href="route('register')" class="text-slate-400 hover:text-white transition-colors duration-300 text-xs">
                     Create Account
                   </Link>
                 </li>
               </template>
               <template v-else>
-                <li>
-                  <Link :href="route('profile.edit')" class="text-slate-400 hover:text-white transition-colors duration-300">
-                    Profile
+                <li class="pt-2">
+                  <Link :href="route('profile.edit')" class="text-slate-400 hover:text-white transition-colors duration-300 text-xs">
+                    Profile Settings
                   </Link>
                 </li>
-<li>
-  <Link :href="route('logout')" method="post" as="button" class="text-slate-400 hover:text-white transition-colors duration-300">
-    Sign Out
-  </Link>
-</li>
+                <li>
+                  <Link :href="route('logout')" method="post" as="button" class="text-slate-400 hover:text-white transition-colors duration-300 text-xs">
+                    Sign Out
+                  </Link>
+                </li>
               </template>
-              <li>
-                <a href="#" class="text-slate-400 hover:text-white transition-colors duration-300">
-                  Privacy Policy
-                </a>
-              </li>
-              <li>
-                <a href="#" class="text-slate-400 hover:text-white transition-colors duration-300">
-                  Terms of Service
-                </a>
-              </li>
             </ul>
           </div>
         </div>
@@ -525,15 +597,15 @@
         <!-- Footer Bottom -->
         <div class="border-t border-white/10 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
           <p class="text-slate-500 text-sm">
-            © 2025 Visual Gallery. All rights reserved.
+            © 2025 Clone Fest Week 2 Project - Visual Gallery Platform. Modernizing Classic PHP Applications.
           </p>
           <p class="text-slate-500 text-sm mt-4 md:mt-0">
-            Built with ❤️ for photography enthusiasts
+            Built with modern web technologies for extensible media management
           </p>
         </div>
       </div>
     </footer>
-  <!-- </GuestLayout> -->
+  </div>
 </template>
 
 <script setup>
@@ -593,8 +665,7 @@ const getImageUrl = (image, variant = 'medium') => {
 </script>
 
 <style scoped>
-
-/* Add this at the top of your existing styles */
+/* Global resets */
 :global(body) {
   margin: 0;
   padding: 0;
@@ -605,18 +676,11 @@ const getImageUrl = (image, variant = 'medium') => {
   padding: 0;
 }
 
-/* Also ensure the layout fills the screen */
 :global(.min-h-screen) {
   min-height: 100vh;
 }
 
-/* Rest of your existing styles... */
-@keyframes slow-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-/* All existing styles remain the same */
+/* Animation keyframes */
 @keyframes slow-spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
@@ -688,11 +752,19 @@ const getImageUrl = (image, variant = 'medium') => {
   animation-delay: 1s;
 }
 
-.line-clamp-2 {
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
+/* Ensure no gaps between sections */
+.py-0 {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+/* Custom spacing for seamless sections */
+section + section {
+  margin-top: 0;
+}
+
+/* Remove any default margins */
+* {
+  box-sizing: border-box;
 }
 </style>
