@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use App\Services\ImageService;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -38,6 +39,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'remember_token',
     ];
 
+    protected $appends = ['avatar_url'];
+
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
@@ -51,6 +54,12 @@ class User extends Authenticatable implements MustVerifyEmail
         'storage_used_bytes' => 'integer',
         'storage_quota_bytes' => 'integer',
     ];
+
+    // Avatar URL accessor (uses ImageService for flexible storage)
+    public function getAvatarUrlAttribute()
+    {
+        return ImageService::getAvatarUrl($this);
+    }
 
     // Relationships
     public function roles(): BelongsToMany
@@ -89,19 +98,18 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     // Role and Permission Methods
-// In your User model, update the hasRole method:
-public function hasRole($role): bool
-{
-    if (is_string($role)) {
-        return $this->roles()->where('slug', $role)->exists();
+    public function hasRole($role): bool
+    {
+        if (is_string($role)) {
+            return $this->roles()->where('slug', $role)->exists();
+        }
+        
+        if (is_array($role)) {
+            return $this->roles()->whereIn('slug', $role)->exists();
+        }
+        
+        return false;
     }
-    
-    if (is_array($role)) {
-        return $this->roles()->whereIn('slug', $role)->exists();
-    }
-    
-    return false;
-}
 
     public function hasAnyRole(array $roles): bool
     {
@@ -131,7 +139,7 @@ public function hasRole($role): bool
         }
     }
 
-    // Storage Methods (CLEANED - NO DUPLICATES)
+    // Storage Methods
     public function getRemainingStorageBytes(): int
     {
         $quota = $this->storage_quota_bytes ?? 1073741824; // 1GB default
@@ -165,11 +173,6 @@ public function hasRole($role): bool
     }
 
     // Utility Methods
-    public function getAvatarUrl(): ?string
-    {
-        return $this->avatar_path ? "http://localhost:9000/gallery-images/{$this->avatar_path}" : null;
-    }
-
     public function updateLastLogin(): void
     {
         $this->update(['last_login_at' => now()]);
