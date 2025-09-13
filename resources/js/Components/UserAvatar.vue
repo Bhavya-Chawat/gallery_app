@@ -7,7 +7,7 @@
       'shadow-lg hover:shadow-violet-500/25',
       'ring-2 ring-white/10 hover:ring-white/20',
       'backdrop-blur-xl',
-      'animate-pulse hover:animate-none'
+      hasAvatar ? '' : 'animate-pulse hover:animate-none'
     ]"
   >
     <!-- Animated background gradient overlay -->
@@ -35,9 +35,10 @@
     <!-- Main content -->
     <div class="relative z-10 w-full h-full flex items-center justify-center">
       <img
-        v-if="user.avatar_url"
-        :src="user.avatar_url"
-        :alt="user.name"
+        v-if="hasAvatar && !imageError"
+        :src="avatarUrl"
+        :alt="user.name || 'User'"
+        @error="handleImageError"
         class="w-full h-full rounded-full object-cover transition-transform duration-500 group-hover:scale-105 ring-1 ring-white/20"
       />
       <span 
@@ -70,17 +71,22 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 const props = defineProps({
   user: { type: Object, required: true },
-  size: { type: String, default: 'md' }, // sm, md, lg
+  size: { type: String, default: 'md' }, // sm, md, lg, xl, 2xl
 })
+
+const imageError = ref(false)
 
 const sizeClasses = computed(() => {
   switch (props.size) {
     case 'sm': return 'w-6 h-6 text-xs'
+    case 'md': return 'w-8 h-8 text-sm'
     case 'lg': return 'w-12 h-12 text-lg'
+    case 'xl': return 'w-16 h-16 text-xl'
+    case '2xl': return 'w-20 h-20 text-2xl'
     default: return 'w-8 h-8 text-sm'
   }
 })
@@ -88,20 +94,74 @@ const sizeClasses = computed(() => {
 const statusIndicatorSize = computed(() => {
   switch (props.size) {
     case 'sm': return 'w-2 h-2'
+    case 'md': return 'w-3 h-3'
     case 'lg': return 'w-4 h-4'
+    case 'xl': return 'w-5 h-5'
+    case '2xl': return 'w-6 h-6'
     default: return 'w-3 h-3'
   }
+})
+
+// FIXED: Check multiple possible avatar properties
+const hasAvatar = computed(() => {
+  return !!(
+    props.user?.avatar_url || 
+    props.user?.avatar_path || 
+    props.user?.avatar
+  )
+})
+
+// FIXED: Generate proper avatar URL from different sources
+const avatarUrl = computed(() => {
+  if (imageError.value) return null
+  
+  // Direct URL (already processed)
+  if (props.user?.avatar_url) {
+    return props.user.avatar_url
+  }
+  
+  // Avatar path (needs URL generation)
+  if (props.user?.avatar_path) {
+    // If it's already a full URL
+    if (props.user.avatar_path.startsWith('http')) {
+      return props.user.avatar_path
+    }
+    
+    // Generate MinIO/S3 URL
+    return `http://localhost:9000/gallery-images/${props.user.avatar_path}`
+  }
+  
+  // Generic avatar property
+  if (props.user?.avatar) {
+    if (props.user.avatar.startsWith('http')) {
+      return props.user.avatar
+    }
+    return `http://localhost:9000/gallery-images/${props.user.avatar}`
+  }
+  
+  return null
 })
 
 const initials = computed(() => {
   if (!props.user?.name) return '?'
   
-  const names = props.user.name.split(' ')
+  const names = props.user.name.trim().split(' ').filter(name => name.length > 0)
+  
   if (names.length >= 2) {
-    return (names[0][0] + names[1][0]).toUpperCase()
+    return (names[0][0] + names[names.length - 1][0]).toUpperCase()
   }
-  return names[0][0].toUpperCase()
+  
+  if (names.length === 1) {
+    return names[0].substring(0, 2).toUpperCase()
+  }
+  
+  return '?'
 })
+
+const handleImageError = () => {
+  console.log('Avatar image failed to load:', avatarUrl.value)
+  imageError.value = true
+}
 </script>
 
 <style scoped>

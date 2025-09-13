@@ -1,4 +1,3 @@
-
 <template>
   <div class="min-h-screen bg-slate-900 relative overflow-hidden">
     <!-- Animated Mesh Background -->
@@ -67,6 +66,26 @@
               <NavLink :href="route('collections.index')" :active="route().current('collections.*')" class="nav-link-enhanced">
                 Collections
               </NavLink>
+              
+              <!-- ADDED: AI Generator External Link -->
+              <a 
+                href="https://ai-img-generator-production.up.railway.app/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                class="nav-link-enhanced external-link-enhanced group relative inline-flex items-center px-3 pt-3 pb-2 text-sm font-medium leading-5 transition-all duration-300 ease-out focus:outline-none overflow-hidden text-slate-300 hover:text-transparent hover:bg-clip-text hover:bg-gradient-to-r hover:from-violet-400 hover:to-cyan-400"
+              >
+                <span class="relative z-10 flex items-center space-x-2">
+                  <span>AI Generator</span>
+                  <!-- External link icon -->
+                  <svg class="w-3 h-3 opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                  </svg>
+                </span>
+                
+                <!-- Enhanced hover effects for external link -->
+                <div class="absolute inset-0 bg-gradient-to-r from-orange-500/10 via-pink-500/10 to-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div class="absolute bottom-0 left-0 h-0.5 w-0 bg-gradient-to-r from-orange-500 to-pink-500 group-hover:w-full transition-all duration-300"></div>
+              </a>
             </div>
           </div>
 
@@ -180,6 +199,19 @@
           <ResponsiveNavLink :href="route('collections.index')" :active="route().current('collections.*')" class="responsive-nav-link-enhanced">
             Collections
           </ResponsiveNavLink>
+          
+          <!-- ADDED: Mobile AI Generator Link -->
+          <a 
+            href="https://ai-img-generator-production.up.railway.app/" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            class="responsive-nav-link-enhanced mobile-external-link flex items-center space-x-2 block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-slate-300 hover:text-white hover:bg-white/10 hover:border-orange-500 transition-all duration-300"
+          >
+            <span>AI Generator</span>
+            <svg class="w-4 h-4 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+            </svg>
+          </a>
         </div>
 
         <!-- Mobile user menu -->
@@ -384,6 +416,22 @@ const performSearch = () => {
   @apply text-violet-400;
 }
 
+/* ADDED: Enhanced External Link Styling */
+.external-link-enhanced {
+  position: relative;
+}
+
+.external-link-enhanced:hover {
+  transform: translateY(-2px);
+}
+
+.external-link-enhanced:hover span {
+  background: linear-gradient(90deg, #f97316, #ec4899, #ef4444);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
 /* Enhanced Dropdown Links */
 .dropdown-link-enhanced {
   @apply text-slate-300 hover:text-white hover:bg-white/10 transition-all duration-300 px-4 py-2 rounded-lg mx-2 my-1;
@@ -404,5 +452,11 @@ const performSearch = () => {
 
 .responsive-nav-link-enhanced.active {
   @apply text-violet-400 bg-violet-500/20;
+}
+
+/* ADDED: Mobile External Link Styling */
+.mobile-external-link:hover {
+  background: linear-gradient(90deg, rgba(249, 115, 22, 0.1), rgba(236, 72, 153, 0.1));
+  color: #f97316;
 }
 </style>
