@@ -181,7 +181,7 @@ class Image extends Model
 
 public function collections(): BelongsToMany
 {
-    return $this->belongsToMany(Collection::class, 'collection_image') // Use collection_image table
+    return $this->belongsToMany(Collection::class, 'collection_image') // Use collection_image
         ->withPivot(['added_at', 'position'])
         ->withTimestamps();
 }

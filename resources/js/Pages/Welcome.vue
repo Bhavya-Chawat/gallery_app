@@ -244,20 +244,47 @@
             </div>
           </div>
 
-          <!-- Hero Visual -->
+          <!-- Hero Visual - SINGLE VERSION (Fixed) -->
           <div class="relative animate-fade-in-up animation-delay-700">
             <div class="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl hover:bg-white/10 transition-all duration-500">
-              <!-- Featured Image Preview Grid -->
+              <!-- Enhanced Featured Image Preview Grid -->
               <div class="grid grid-cols-2 gap-4 mb-6">
-                <div v-for="i in 4" :key="i" 
-                     class="aspect-square bg-gradient-to-br from-slate-800 to-violet-900/50 rounded-2xl flex items-center justify-center hover:scale-105 transition-transform duration-300 border border-white/10"
-                     :class="{
-                       'animate-pulse delay-100': i === 1,
-                       'animate-pulse delay-300': i === 2,
-                       'animate-pulse delay-500': i === 3,
-                       'animate-pulse delay-700': i === 4,
-                     }">
-                  <PhotoIcon class="h-12 w-12 text-violet-400/60" />
+                <div 
+                  v-for="(image, index) in previewImages" 
+                  :key="`preview-${image.id || index}`"
+                  class="aspect-square bg-gradient-to-br from-slate-800 to-violet-900/50 rounded-2xl overflow-hidden flex items-center justify-center hover:scale-105 transition-transform duration-300 border border-white/10 relative group"
+                  :class="{
+                    'animate-pulse delay-100': index === 0,
+                    'animate-pulse delay-300': index === 1,
+                    'animate-pulse delay-500': index === 2,
+                    'animate-pulse delay-700': index === 3,
+                  }"
+                >
+                  <!-- Actual Image Display -->
+                  <img 
+                    v-if="getImageUrl(image, 'thumbnail')"
+                    :src="getImageUrl(image, 'thumbnail')"
+                    :alt="image.title || `Preview ${index + 1}`"
+                    :data-index="index"
+                    class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                    @error="handlePreviewImageError"
+                  />
+                  
+                  <!-- Fallback with Better Placeholder -->
+                  <div 
+                    v-else
+                    class="w-full h-full bg-gradient-to-br from-violet-600/20 to-cyan-600/20 flex items-center justify-center"
+                  >
+                    <PhotoIcon class="h-12 w-12 text-violet-400/60" />
+                  </div>
+                  
+                  <!-- Overlay on Hover -->
+                  <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                    <div class="text-white text-xs font-medium text-center px-2">
+                      <div v-if="image && image.title" class="truncate">{{ image.title }}</div>
+                      <div v-else>Sample {{ index + 1 }}</div>
+                    </div>
+                  </div>
                 </div>
               </div>
               
@@ -351,28 +378,34 @@
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-24">
           <div
             v-for="(image, index) in featuredImages"
-            :key="image.id"
+            :key="`featured-${image.id || index}`"
             class="group relative aspect-square bg-slate-800/50 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden hover:border-violet-400/50 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-violet-500/25"
             :style="{ animationDelay: index * 100 + 'ms' }"
           >
             <img
+              v-if="getImageUrl(image, 'medium')"
               :src="getImageUrl(image, 'medium')"
-              :alt="image.alt_text || image.title"
+              :alt="image.alt_text || image.title || 'Gallery Image'"
               class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-            >
+              @error="handleFeaturedImageError"
+            />
+            
+            <div v-else class="w-full h-full bg-gradient-to-br from-slate-700 to-violet-900/50 flex items-center justify-center">
+              <PhotoIcon class="h-16 w-16 text-violet-400/60" />
+            </div>
             
             <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300">
               <div class="absolute bottom-4 left-4 right-4 text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
                 <h3 class="font-semibold truncate text-white">{{ image.title || 'Untitled' }}</h3>
-                <p class="text-sm text-slate-300">by {{ image.owner?.name }}</p>
+                <p class="text-sm text-slate-300">by {{ image.owner?.name || 'Anonymous' }}</p>
               </div>
             </div>
 
             <Link
-              :href="route('images.show', image.slug)"
+              :href="route('images.show', image.slug || image.id)"
               class="absolute inset-0 z-10"
             >
-              <span class="sr-only">View {{ image.title }}</span>
+              <span class="sr-only">View {{ image.title || 'Image' }}</span>
             </Link>
           </div>
         </div>
@@ -404,17 +437,18 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-24">
           <div
             v-for="(album, index) in featuredAlbums"
-            :key="album.id"
+            :key="`album-${album.id || index}`"
             class="group bg-slate-800/30 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden hover:border-violet-400/40 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-violet-500/20"
             :style="{ animationDelay: index * 150 + 'ms' }"
           >
             <div class="aspect-video bg-gradient-to-br from-violet-600 to-cyan-600 relative overflow-hidden">
               <img
-                v-if="album.cover_image"
+                v-if="album.cover_image && getImageUrl(album.cover_image, 'medium')"
                 :src="getImageUrl(album.cover_image, 'medium')"
-                :alt="album.title"
+                :alt="album.title || 'Album Cover'"
                 class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-              >
+                @error="handleAlbumImageError"
+              />
               <div v-else class="flex items-center justify-center h-full">
                 <FolderIcon class="h-16 w-16 text-white/60" />
               </div>
@@ -422,18 +456,18 @@
 
             <div class="p-6 bg-white/5">
               <h3 class="text-xl font-semibold text-white mb-2 truncate">
-                {{ album.title }}
+                {{ album.title || 'Untitled Album' }}
               </h3>
               <p class="text-slate-300 text-sm mb-4">
-                {{ album.description }}
+                {{ album.description || 'No description available' }}
               </p>
               
               <div class="flex items-center justify-between">
                 <span class="text-sm text-slate-400 font-medium">
-                  {{ album.images_count }} image{{ album.images_count !== 1 ? 's' : '' }}
+                  {{ album.images_count || 0 }} image{{ (album.images_count || 0) !== 1 ? 's' : '' }}
                 </span>
                 <Link
-                  :href="route('albums.show', album.slug)"
+                  :href="route('albums.show', album.slug || album.id)"
                   class="text-sm font-semibold bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent hover:from-white hover:to-white transition-all duration-300"
                 >
                   View Album →
@@ -620,6 +654,7 @@ import {
 
 import GuestLayout from '@/Layouts/GuestLayout.vue'
 
+// Props definition MUST come first
 const props = defineProps({
   canLogin: Boolean,
   canRegister: Boolean,
@@ -641,12 +676,57 @@ const props = defineProps({
   },
 })
 
+// Page and auth setup
 const page = usePage()
 const auth = computed(() => page.props.auth || { user: null })
-
 const mobileMenuOpen = ref(false)
 
+// Create preview images from featured images or use sample data
+const previewImages = computed(() => {
+  if (props.featuredImages && props.featuredImages.length >= 4) {
+    // Use actual featured images if available
+    return props.featuredImages.slice(0, 4)
+  } else if (props.featuredImages && props.featuredImages.length > 0) {
+    // Repeat available images to fill 4 slots
+    const images = []
+    for (let i = 0; i < 4; i++) {
+      images.push(props.featuredImages[i % props.featuredImages.length])
+    }
+    return images
+  } else {
+    // Fallback sample data with placeholder URLs
+    return [
+      { 
+        id: 'sample-1', 
+        title: 'Modern Architecture',
+        url: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&h=400&fit=crop&crop=center',
+        storage_path: null
+      },
+      { 
+        id: 'sample-2', 
+        title: 'Urban Photography',
+        url: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&h=400&fit=crop&crop=center',
+        storage_path: null
+      },
+      { 
+        id: 'sample-3', 
+        title: 'Nature Vista',
+        url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=400&fit=crop&crop=center',
+        storage_path: null
+      },
+      { 
+        id: 'sample-4', 
+        title: 'Creative Design',
+        url: 'https://images.unsplash.com/photo-1460472178825-e5240623afd5?w=400&h=400&fit=crop&crop=center',
+        storage_path: null
+      }
+    ]
+  }
+})
+
+// Utility functions
 const formatNumber = (number) => {
+  if (!number) return '0'
   if (number >= 1000000) {
     return (number / 1000000).toFixed(1) + 'M'
   } else if (number >= 1000) {
@@ -655,14 +735,66 @@ const formatNumber = (number) => {
   return number.toString()
 }
 
+// Enhanced image URL function with multiple fallbacks
 const getImageUrl = (image, variant = 'medium') => {
-  // Use direct MinIO URL since thumbnails aren't processed yet
-  if (image.storage_path) {
-    return `http://localhost:9000/gallery-images/${image.storage_path}`
+  if (!image) return null
+  
+  try {
+    // For preview/thumbnail variant, try smaller sizes first
+    if (variant === 'thumbnail') {
+      if (image.storage_path) {
+        return `http://localhost:9000/gallery-images/${image.storage_path}`
+      }
+      if (image.thumbnails && image.thumbnails.small) {
+        return image.thumbnails.small
+      }
+    }
+    
+    // Try multiple URL sources
+    if (image.storage_path) {
+      return `http://localhost:9000/gallery-images/${image.storage_path}`
+    }
+    if (image.url) {
+      return image.url
+    }
+    if (image.thumbnails && image.thumbnails[variant]) {
+      return image.thumbnails[variant]
+    }
+  } catch (error) {
+    console.warn('Error getting image URL:', error)
   }
-  return image.url || '/images/placeholder.jpg'
+  
+  return null
+}
+
+// Error handling functions
+const handlePreviewImageError = (event) => {
+  const fallbackImages = [
+    'https://via.placeholder.com/400x400/8b5cf6/ffffff?text=Gallery+1',
+    'https://via.placeholder.com/400x400/06b6d4/ffffff?text=Gallery+2',
+    'https://via.placeholder.com/400x400/a855f7/ffffff?text=Gallery+3',
+    'https://via.placeholder.com/400x400/3b82f6/ffffff?text=Gallery+4'
+  ]
+  
+  const index = parseInt(event.target.dataset.index) || 0
+  event.target.src = fallbackImages[index] || fallbackImages
+  event.target.classList.add('opacity-75')
+  console.warn('Preview image failed to load, using fallback')
+}
+
+const handleFeaturedImageError = (event) => {
+  event.target.src = 'https://via.placeholder.com/400x400/374151/ffffff?text=No+Image'
+  event.target.classList.add('opacity-75')
+  console.warn('Featured image failed to load, using fallback')
+}
+
+const handleAlbumImageError = (event) => {
+  event.target.src = 'https://via.placeholder.com/400x300/374151/ffffff?text=No+Cover'
+  event.target.classList.add('opacity-75')
+  console.warn('Album cover failed to load, using fallback')
 }
 </script>
+
 
 <style scoped>
 /* Global resets */

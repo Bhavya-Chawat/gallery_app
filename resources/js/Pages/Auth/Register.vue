@@ -239,19 +239,20 @@ const submit = () => {
                                 <InputError class="text-red-400 text-sm animate-slide-in" :message="form.errors.password_confirmation" />
                             </div>
 
-                            <!-- Terms Notice -->
-                            <div class="text-sm text-slate-400 text-center py-2 px-4 bg-white/5 rounded-xl border border-white/10">
-                                <p class="leading-relaxed">
-                                    By creating an account, you agree to our
-                                    <a href="#" class="bg-gradient-to-r from-cyan-400 to-violet-400 bg-clip-text text-transparent hover:from-white hover:to-white transition-all duration-300 font-medium">
-                                        Terms of Service
-                                    </a>
-                                    and
-                                    <a href="#" class="bg-gradient-to-r from-cyan-400 to-violet-400 bg-clip-text text-transparent hover:from-white hover:to-white transition-all duration-300 font-medium">
-                                        Privacy Policy
-                                    </a>
-                                </p>
-                            </div>
+<!-- Updated Terms Notice with proper routes -->
+<div class="text-sm text-slate-400 text-center py-2 px-4 bg-white/5 rounded-xl border border-white/10">
+    <p class="leading-relaxed">
+        By creating an account, you agree to our
+        <Link :href="route('terms')" class="bg-gradient-to-r from-cyan-400 to-violet-400 bg-clip-text text-transparent hover:from-white hover:to-white transition-all duration-300 font-medium hover:underline">
+            Terms of Service
+        </Link>
+        and
+        <Link :href="route('privacy')" class="bg-gradient-to-r from-cyan-400 to-violet-400 bg-clip-text text-transparent hover:from-white hover:to-white transition-all duration-300 font-medium hover:underline">
+            Privacy Policy
+        </Link>
+    </p>
+</div>
+
 
                             <!-- Submit Button -->
                             <div class="pt-3">

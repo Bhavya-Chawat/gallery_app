@@ -634,11 +634,12 @@ const formatTimeAgo = (timestamp) => {
   }
 }
 
-const getImageUrl = (image, size = 'medium') => {
-  if (!image) return '/placeholder.jpg'
-  return image.url || `/storage/images/${image.filename}` || '/placeholder.jpg'
+const getImageUrl = (image) => {
+  if (image.storage_path) {
+    return `http://localhost:9000/gallery-images/${image.storage_path}`
+  }
+  return '/images/placeholder.jpg'
 }
-
 const getActivityIcon = (type) => {
   const icons = {
     'upload': PhotoIcon,

@@ -206,7 +206,7 @@ Route::middleware(['auth'])->group(function () {
     
     // Album Image Management
     Route::get('/albums/{album}/add-images', [AlbumController::class, 'addImagesForm'])->name('albums.add-images-form');
-    Route::post('/albums/{album}/add-images', [AlbumController::class, 'addImages'])->name('albums.add-images');
+    Route::post('/albums/{album:slug}/add-images', [AlbumController::class, 'addImages'])->name('albums.add-images');
     Route::delete('/albums/{album}/remove-images', [AlbumController::class, 'removeImages'])->name('albums.remove-images');
 
     // Collection Management (authenticated features)

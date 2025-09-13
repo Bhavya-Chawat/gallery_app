@@ -80,7 +80,7 @@
                 <div class="relative group-hover:scale-110 transition-transform duration-300">
                   <img
                     v-if="collection.cover_image"
-                    :src="collection.cover_image.thumbnail_url"
+                    :src="getCoverImageUrl(collection.cover_image)"
                     :alt="collection.title"
                     class="w-12 h-12 object-cover rounded-xl shadow-lg border border-white/20"
                   />
@@ -94,7 +94,7 @@
                     {{ collection.title }}
                   </h5>
                   <p class="text-sm text-slate-400 group-hover:text-slate-300 transition-colors">
-                    {{ collection.item_count }} items
+                    {{ collection.item_count || 0 }} items
                   </p>
                 </div>
               </div>
@@ -203,6 +203,8 @@
 import { ref, reactive, onMounted, watch } from 'vue'
 import { XMarkIcon, FolderIcon, PlusIcon } from '@heroicons/vue/24/outline'
 import Modal from '@/Components/Modal.vue'
+import axios from 'axios'
+import route from 'ziggy-js'
 
 const props = defineProps({
   show: Boolean,
@@ -235,6 +237,26 @@ watch(() => props.show, (show) => {
   }
 })
 
+// FIXED: Helper function to get cover image URL
+const getCoverImageUrl = (coverImage) => {
+  if (!coverImage) return null
+  
+  // Handle different possible structures
+  if (coverImage.thumbnail_url) {
+    return coverImage.thumbnail_url
+  }
+  
+  if (coverImage.storage_path) {
+    return `http://localhost:9000/gallery-images/${coverImage.storage_path}`
+  }
+  
+  if (coverImage.url) {
+    return coverImage.url
+  }
+  
+  return null
+}
+
 const loadCollections = async () => {
   try {
     loading.value = true
@@ -244,63 +266,140 @@ const loadCollections = async () => {
     collections.value = response.data.data || response.data
   } catch (error) {
     console.error('Failed to load collections:', error)
+    collections.value = []
   } finally {
     loading.value = false
   }
 }
 
+// FIXED: Check if image is in collection using both ID and slug
 const isInCollection = (collection) => {
-  return collection.items?.some(item => 
-    item.collectable_type === 'App\\Models\\Image' && 
-    item.collectable_id === props.image.id
-  )
+  if (!collection.items || !props.image) return false
+  
+  return collection.items.some(item => {
+    // Handle both old ID format and new structure
+    const imageId = props.image.id
+    const imageSlug = props.image.slug
+    
+    return (
+      (item.collectable_type === 'App\\Models\\Image' || item.collectable_type === 'image') && 
+      (item.collectable_id === imageId || item.collectable_id === imageSlug || 
+       item.image_id === imageId || item.image_id === imageSlug ||
+       item.id === imageId || item.slug === imageSlug)
+    )
+  })
 }
 
+// FIXED: Use slug-based route for adding to collection
 const addToCollection = async (collection) => {
-  if (isInCollection(collection) || adding.value) return
+  if (isInCollection(collection) || adding.value || !props.image) return
   
   try {
     adding.value = true
-    await axios.post(route('collections.add-image', collection.id), {
-      image_id: props.image.id
-    })
     
-    // Update local state
+    // Use slug if available, fallback to ID
+    const imageIdentifier = props.image.slug || props.image.id
+    
+    // Try slug-based route first
+    let response
+    try {
+      response = await axios.post(route('collections.add-image', collection.slug || collection.id), {
+        image_id: imageIdentifier,
+        image_slug: props.image.slug // Also send slug for backend flexibility
+      })
+    } catch (error) {
+      // Fallback to ID-based route if slug route doesn't exist
+      response = await axios.post(route('collections.add-image', collection.id), {
+        image_id: props.image.id,
+        image_slug: props.image.slug
+      })
+    }
+    
+    // Update local state to reflect the addition
     if (!collection.items) collection.items = []
+    
+    // Add the image to local collection state
     collection.items.push({
       collectable_type: 'App\\Models\\Image',
       collectable_id: props.image.id,
+      image_id: props.image.id,
+      slug: props.image.slug,
+      id: props.image.id
     })
+    
+    // Update item count
     collection.item_count = (collection.item_count || 0) + 1
     
     emit('added', collection)
+    
+    // Show success feedback
+    console.log(`Successfully added "${props.image.title || 'Untitled'}" to "${collection.title}"`)
+    
   } catch (error) {
     console.error('Failed to add to collection:', error)
+    
+    // Show user-friendly error
+    if (error.response?.status === 422) {
+      alert('This image is already in the collection.')
+    } else if (error.response?.status === 404) {
+      alert('Collection not found. Please refresh and try again.')
+    } else {
+      alert('Failed to add image to collection. Please try again.')
+    }
   } finally {
     adding.value = false
   }
 }
 
+// FIXED: Create collection and use slug for subsequent operations
 const createCollection = async () => {
   if (!newCollection.title.trim() || creating.value) return
   
   try {
     creating.value = true
-    const response = await axios.post(route('collections.store'), newCollection)
+    
+    const response = await axios.post(route('collections.store'), {
+      title: newCollection.title.trim(),
+      description: newCollection.description.trim(),
+      privacy: newCollection.privacy
+    })
+    
     const collection = response.data.collection || response.data
     
-    // Add to local collections
+    // Ensure the collection has the required properties
+    collection.items = []
+    collection.item_count = 0
+    
+    // Add to local collections list
     collections.value.unshift(collection)
     
-    // Add image to new collection
+    // Add image to the newly created collection
     await addToCollection(collection)
     
     // Reset form
-    Object.assign(newCollection, { title: '', description: '', privacy: 'public' })
+    Object.assign(newCollection, { 
+      title: '', 
+      description: '', 
+      privacy: 'public' 
+    })
     showCreateForm.value = false
+    
+    console.log(`Successfully created collection "${collection.title}" and added image`)
     
   } catch (error) {
     console.error('Failed to create collection:', error)
+    
+    // Show user-friendly error
+    if (error.response?.status === 422) {
+      const errors = error.response.data.errors
+      if (errors.title) {
+        alert(`Title error: ${errors.title[0]}`)
+      } else {
+        alert('Please check your input and try again.')
+      }
+    } else {
+      alert('Failed to create collection. Please try again.')
+    }
   } finally {
     creating.value = false
   }

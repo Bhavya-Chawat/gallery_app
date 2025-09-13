@@ -1,4 +1,3 @@
-
 <template>
   <div class="min-h-screen bg-slate-900 relative overflow-hidden">
     <!-- Animated Mesh Background -->
@@ -347,6 +346,11 @@ const paginationLinks = computed(() => {
   return props.images?.links || []
 })
 
+// FIXED: Get CSRF token
+const getCSRFToken = () => {
+  return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+}
+
 // Methods
 const openAddModal = async () => {
   showAddModal.value = true
@@ -362,10 +366,14 @@ const closeModal = () => {
   searchQuery.value = ''
 }
 
+// FIXED: Better async/await handling
 const loadAvailableImages = async () => {
   loadingImages.value = true
   try {
     const response = await fetch('/api/my-images?limit=50')
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
     const data = await response.json()
     availableImages.value = data.images || []
   } catch (error) {
@@ -386,6 +394,9 @@ const searchImages = async () => {
   loadingImages.value = true
   try {
     const response = await fetch(`/api/search-images?q=${encodeURIComponent(searchQuery.value)}`)
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
     const data = await response.json()
     availableImages.value = data.images || []
   } catch (error) {
@@ -405,33 +416,60 @@ const toggleImageSelection = (image) => {
   }
 }
 
+// FIXED: Sequential image addition with proper error handling
 const addSelectedImages = async () => {
   if (selectedImages.value.length === 0) return
 
   addingImages.value = true
-  try {
-    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
-    
-    // Add each selected image to the collection
-    const promises = selectedImages.value.map(imageId => 
-      fetch(`/collections/${props.collection.slug}/add-image`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': token || ''
-        },
-        body: JSON.stringify({
-          image_id: imageId
-        })
-      })
-    )
+  let successCount = 0
+  let errorCount = 0
+  const errors = []
 
-    await Promise.all(promises)
-    
-    // Close modal and reload page
-    closeModal()
-    window.location.reload()
-    
+  try {
+    // Add images one by one to better handle individual errors
+    for (const imageId of selectedImages.value) {
+      try {
+        const response = await fetch(`/collections/${props.collection.slug}/add-image`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': getCSRFToken(),
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify({
+            image_id: imageId
+          })
+        })
+
+        const data = await response.json()
+
+        if (response.ok && data.success) {
+          successCount++
+        } else {
+          errorCount++
+          errors.push(data.message || 'Unknown error')
+        }
+      } catch (error) {
+        console.error(`Failed to add image ${imageId}:`, error)
+        errorCount++
+        errors.push(`Failed to add image: ${error.message}`)
+      }
+    }
+
+    // Show results
+    if (successCount > 0) {
+      if (errorCount === 0) {
+        closeModal()
+        window.location.reload()
+      } else {
+        alert(`Added ${successCount} images successfully. ${errorCount} failed: ${errors.slice(0, 3).join(', ')}`)
+        closeModal()
+        window.location.reload()
+      }
+    } else {
+      alert(`Failed to add images: ${errors.slice(0, 3).join(', ')}`)
+    }
+
   } catch (error) {
     console.error('Failed to add images:', error)
     alert('Failed to add images to collection. Please try again.')
@@ -440,33 +478,37 @@ const addSelectedImages = async () => {
   }
 }
 
-const removeFromCollection = (imageId) => {
-  if (confirm('Are you sure you want to remove this image from the collection?')) {
-    // Simple form submission
-    const form = document.createElement('form')
-    form.method = 'POST'
-    form.action = `/collections/${props.collection.slug}/remove-image`
-    
-    const methodInput = document.createElement('input')
-    methodInput.type = 'hidden'
-    methodInput.name = '_method'
-    methodInput.value = 'DELETE'
-    form.appendChild(methodInput)
-    
-    const tokenInput = document.createElement('input')
-    tokenInput.type = 'hidden'
-    tokenInput.name = '_token'
-    tokenInput.value = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-    form.appendChild(tokenInput)
-    
-    const imageInput = document.createElement('input')
-    imageInput.type = 'hidden'
-    imageInput.name = 'image_id'
-    imageInput.value = imageId
-    form.appendChild(imageInput)
-    
-    document.body.appendChild(form)
-    form.submit()
+// FIXED: Use fetch with proper error handling for remove
+const removeFromCollection = async (imageId) => {
+  if (!confirm('Are you sure you want to remove this image from the collection?')) {
+    return
+  }
+
+  try {
+    const response = await fetch(`/collections/${props.collection.slug}/remove-image`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': getCSRFToken(),
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        image_id: imageId
+      })
+    })
+
+    const data = await response.json()
+
+    if (response.ok && data.success) {
+      // Reload page to show updated collection
+      window.location.reload()
+    } else {
+      throw new Error(data.message || 'Failed to remove image')
+    }
+
+  } catch (error) {
+    console.error('Failed to remove image:', error)
+    alert(`Error: ${error.message}`)
   }
 }
 
@@ -521,13 +563,10 @@ const formatDate = (date) => {
 </script>
 
 <style scoped>
+/* All your existing styles remain the same */
 @keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
 @keyframes fade-in-up {
@@ -542,12 +581,8 @@ const formatDate = (date) => {
 }
 
 @keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes scale-up {
@@ -596,6 +631,8 @@ const formatDate = (date) => {
 .overflow-y-auto::-webkit-scrollbar-thumb:hover {
   background: rgba(139, 92, 246, 0.8);
 }
+
+/* All other existing styles remain the same... */
 
 /* Gradient animation for mesh background */
 @keyframes gradient-shift {

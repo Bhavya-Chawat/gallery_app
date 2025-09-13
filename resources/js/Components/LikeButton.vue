@@ -99,9 +99,11 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { router } from '@inertiajs/vue3'
 import { HeartIcon } from '@heroicons/vue/24/outline'
+import axios from 'axios'
+import route from 'ziggy-js'
 
 const props = defineProps({
   likeableType: String,
@@ -114,30 +116,101 @@ const liked = ref(props.initialLiked)
 const likesCount = ref(props.initialLikesCount)
 const loading = ref(false)
 
+// FIXED: Add debouncing and request abortion
+let abortController = null
+let debounceTimeout = null
+
 const toggleLike = async () => {
+  // Prevent multiple rapid clicks
+  if (loading.value) return
+  
+  // Clear any existing debounce
+  if (debounceTimeout) {
+    clearTimeout(debounceTimeout)
+  }
+  
+  // Abort any pending request
+  if (abortController) {
+    abortController.abort()
+  }
+  
+  // Debounce the request by 300ms
+  debounceTimeout = setTimeout(async () => {
+    await performLikeToggle()
+  }, 300)
+}
+
+const performLikeToggle = async () => {
   if (loading.value) return
   
   try {
     loading.value = true
     
+    // Create new abort controller for this request
+    abortController = new AbortController()
+    
+    // Store previous state for rollback
+    const previousLiked = liked.value
+    const previousCount = likesCount.value
+    
+    // Optimistic update
+    liked.value = !liked.value
+    likesCount.value = liked.value ? previousCount + 1 : previousCount - 1
+    
     const response = await axios.post(route('likes.toggle'), {
       likeable_type: props.likeableType,
       likeable_id: props.likeableId,
+    }, {
+      signal: abortController.signal,
+      // Prevent duplicate requests
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'Content-Type': 'application/json',
+      }
     })
     
-    liked.value = response.data.liked
-    likesCount.value = response.data.likes_count
+    // Update with server response (in case of discrepancy)
+    if (response.data) {
+      liked.value = response.data.liked
+      likesCount.value = response.data.likes_count || response.data.likesCount
+    }
     
   } catch (error) {
+    // Don't handle aborted requests as errors
+    if (error.name === 'AbortError' || error.code === 'ECONNABORTED') {
+      return
+    }
+    
+    // Rollback optimistic update on error
+    liked.value = props.initialLiked
+    likesCount.value = props.initialLikesCount
+    
     console.error('Failed to toggle like:', error)
+    
+    // Optional: Show user-friendly error message
+    // You could emit an event or use a toast notification here
+    
   } finally {
     loading.value = false
+    abortController = null
   }
 }
+
+// Cleanup on component unmount
+onMounted(() => {
+  return () => {
+    if (abortController) {
+      abortController.abort()
+    }
+    if (debounceTimeout) {
+      clearTimeout(debounceTimeout)
+    }
+  }
+})
 </script>
 
 <style scoped>
-/* Gradient animation for background */
+/* All your existing styles remain the same */
 @keyframes gradient-shift-liked {
   0%, 100% { 
     background: linear-gradient(45deg, rgba(244, 63, 94, 0.1), rgba(236, 72, 153, 0.1), rgba(244, 63, 94, 0.1));
@@ -164,7 +237,6 @@ const toggleLike = async () => {
   animation: gradient-shift-default 3s ease-in-out infinite;
 }
 
-/* Floating particles animation */
 @keyframes float-particles {
   0%, 100% { 
     transform: translateY(0px) translateX(0px); 
@@ -180,7 +252,6 @@ const toggleLike = async () => {
   animation: float-particles 2s ease-in-out infinite;
 }
 
-/* Heart beat animation */
 @keyframes heart-beat {
   0%, 100% { 
     transform: scale(1); 
@@ -200,7 +271,6 @@ const toggleLike = async () => {
   animation: heart-beat 1.5s ease-in-out infinite;
 }
 
-/* Pulse ring for liked state */
 @keyframes pulse-ring-liked {
   0% {
     box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.4);
@@ -217,7 +287,6 @@ const toggleLike = async () => {
   animation: pulse-ring-liked 2s ease-out infinite;
 }
 
-/* Ripple effect */
 @keyframes ripple {
   0% {
     transform: scale(0);
@@ -233,7 +302,6 @@ const toggleLike = async () => {
   animation: ripple 0.6s ease-out;
 }
 
-/* Enhanced hover states */
 .group:hover .animate-float-particles {
   animation-duration: 1.5s;
 }
@@ -242,19 +310,16 @@ const toggleLike = async () => {
   animation-duration: 0.3s;
 }
 
-/* Loading state enhancements */
 .group:disabled .animate-gradient-shift-liked,
 .group:disabled .animate-gradient-shift-default {
   animation-play-state: paused;
 }
 
-/* Focus accessibility */
 .group:focus-visible {
   outline: 2px solid rgba(139, 92, 246, 0.5);
   outline-offset: 2px;
 }
 
-/* Responsive adjustments */
 @media (max-width: 640px) {
   .group {
     padding: 0.375rem 0.75rem;
@@ -270,7 +335,6 @@ const toggleLike = async () => {
   }
 }
 
-/* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
   .group, .group *, .animate-heart-beat, .animate-float-particles, .animate-gradient-shift-liked, .animate-gradient-shift-default {
     animation: none !important;
@@ -282,7 +346,6 @@ const toggleLike = async () => {
   }
 }
 
-/* High contrast mode */
 @media (prefers-contrast: high) {
   .group {
     border-width: 2px;

@@ -140,9 +140,19 @@ class CollectionController extends Controller
             'initial_images.*' => 'exists:images,id',
         ]);
 
+        // FIXED: Generate slug properly
+        $slug = Str::slug($request->title);
+        $originalSlug = $slug;
+        $counter = 1;
+        while (Collection::where('slug', $slug)->exists()) {
+            $slug = $originalSlug . '-' . $counter;
+            $counter++;
+        }
+
         $collection = Collection::create([
             'curator_id' => $userId,
             'title' => $request->title,
+            'slug' => $slug,
             'description' => $request->description,
             'privacy' => $request->privacy,
             'is_published' => $request->privacy !== 'private',
@@ -183,12 +193,12 @@ class CollectionController extends Controller
         // Load relationships
         $collection->load(['curator']);
 
-        // Get collection images with pagination
+        // FIXED: Get collection images with proper relationship
         $images = $collection->images()
             ->with(['owner'])
-            ->whereIn('privacy', ['public', 'unlisted'])
-            ->where('is_published', true)
-            ->orderBy('created_at', 'desc')
+            ->whereIn('images.privacy', ['public', 'unlisted'])
+            ->where('images.is_published', true)
+            ->orderByPivot('created_at', 'desc')
             ->paginate(24)
             ->withQueryString();
 
@@ -327,7 +337,7 @@ class CollectionController extends Controller
     }
 
     /**
-     * Add an image to the collection
+     * FIXED: Add an image to the collection
      */
     public function addImage(Request $request, Collection $collection)
     {
@@ -342,13 +352,16 @@ class CollectionController extends Controller
 
         $image = Image::findOrFail($request->image_id);
         
-        // Check if image is already in collection
-        $exists = $collection->images()->where('images.id', $image->id)->exists();
+        // FIXED: Check if image is already in collection using pivot table
+        $exists = $collection->images()->where('image_id', $image->id)->exists();
 
         if (!$exists) {
+            // FIXED: Use proper pivot table structure
             $collection->images()->attach($image->id, [
                 'added_at' => now(),
                 'position' => $collection->images()->count() + 1,
+                'created_at' => now(),
+                'updated_at' => now(),
             ]);
 
             // Update collection's images count
@@ -359,6 +372,9 @@ class CollectionController extends Controller
                 $collection->update(['cover_image_id' => $image->id]);
             }
 
+            // Touch the collection to update timestamp
+            $collection->touch();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Image added to collection successfully.'
@@ -368,17 +384,20 @@ class CollectionController extends Controller
         return response()->json([
             'success' => false,
             'message' => 'Image is already in this collection.'
-        ]);
+        ], 409);
     }
 
     /**
-     * Remove an image from the collection
+     * FIXED: Remove an image from the collection
      */
     public function removeImage(Request $request, Collection $collection)
     {
         // Simple ownership check
         if (!auth()->check() || auth()->id() !== $collection->curator_id) {
-            return response()->json(['error' => 'Unauthorized'], 403);
+            if ($request->expectsJson()) {
+                return response()->json(['error' => 'Unauthorized'], 403);
+            }
+            return redirect('/login');
         }
 
         $request->validate([
@@ -387,6 +406,7 @@ class CollectionController extends Controller
 
         $image = Image::findOrFail($request->image_id);
         
+        // FIXED: Use proper pivot detach
         $removed = $collection->images()->detach($image->id);
 
         if ($removed) {
@@ -399,16 +419,27 @@ class CollectionController extends Controller
                 $collection->update(['cover_image_id' => $newCover?->id]);
             }
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Image removed from collection successfully.'
-            ]);
+            // Touch the collection to update timestamp
+            $collection->touch();
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Image removed from collection successfully.'
+                ]);
+            }
+
+            return redirect()->back()->with('success', 'Image removed from collection successfully.');
         }
 
-        return response()->json([
-            'success' => false,
-            'message' => 'Image was not found in this collection.'
-        ]);
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Image was not found in this collection.'
+            ], 404);
+        }
+
+        return redirect()->back()->withErrors(['error' => 'Image was not found in this collection.']);
     }
 
     /**

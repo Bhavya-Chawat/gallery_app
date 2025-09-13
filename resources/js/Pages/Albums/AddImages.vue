@@ -126,46 +126,53 @@
                 class="group relative bg-slate-800/30 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden aspect-square hover:border-violet-400/50 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-violet-500/20 animate-fade-in-up"
                 :style="{ animationDelay: (0.1 * (index % 12)) + 's' }"
               >
-                <!-- Selection Checkbox -->
-                <div class="absolute top-3 left-3 z-20">
-                  <div class="relative">
+                <!-- FIXED: Selection Checkbox with proper z-index and pointer events -->
+                <div class="absolute top-3 left-3 z-30">
+                  <label class="relative block cursor-pointer group/checkbox">
                     <input
                       v-model="selectedImages"
                       :value="image.id"
                       type="checkbox"
-                      class="h-5 w-5 text-violet-600 focus:ring-violet-500 border-white/40 rounded bg-white/20 backdrop-blur-xl transition-all duration-300"
+                      class="relative z-10 h-5 w-5 text-violet-600 focus:ring-violet-500 border-white/40 rounded bg-white/20 backdrop-blur-xl transition-all duration-300 hover:scale-110 focus:scale-110"
                     />
-                    <div class="absolute inset-0 bg-gradient-to-r from-violet-400/20 to-cyan-400/20 rounded blur opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  </div>
+                    <!-- Enhanced clickable area -->
+                    <div class="absolute inset-0 -m-2 bg-transparent rounded-lg group-hover/checkbox:bg-violet-400/10 transition-colors duration-300"></div>
+                    <!-- Glow effect -->
+                    <div class="absolute inset-0 bg-gradient-to-r from-violet-400/20 to-cyan-400/20 rounded blur opacity-0 group-hover/checkbox:opacity-100 transition-opacity duration-300"></div>
+                  </label>
                 </div>
 
-                <!-- Current Album Badge -->
-                <div v-if="image.album_id" class="absolute top-3 right-3 z-20">
+                <!-- FIXED: Current Album Badge with proper z-index -->
+                <div v-if="image.album_id" class="absolute top-3 right-3 z-30">
                   <span class="px-3 py-1.5 text-xs font-bold bg-amber-500/20 border border-amber-500/30 text-amber-300 rounded-full backdrop-blur-xl">
                     In Album
                   </span>
                 </div>
 
-                <!-- Image -->
-                <div class="relative w-full h-full overflow-hidden rounded-2xl">
+                <!-- FIXED: Image with click handler for selection -->
+                <div 
+                  class="relative w-full h-full overflow-hidden rounded-2xl cursor-pointer"
+                  @click="toggleImageSelection(image.id)"
+                >
                   <img
                     :src="getImageUrl(image)"
                     :alt="image.title || 'Untitled'"
-                    class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                    class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 pointer-events-none"
                   />
-                  <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+                  <!-- FIXED: Gradient overlay with pointer-events-none -->
+                  <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none"></div>
                 </div>
 
-                <!-- Title overlay -->
-                <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent backdrop-blur-sm text-white p-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
+                <!-- FIXED: Title overlay with proper pointer events -->
+                <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent backdrop-blur-sm text-white p-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 pointer-events-none z-20">
                   <p class="text-sm font-bold truncate text-white">{{ image.title || 'Untitled' }}</p>
                   <p v-if="image.album_id" class="text-xs text-violet-300 truncate mt-1">
                     Current: {{ getAlbumName(image.album_id) }}
                   </p>
                 </div>
 
-                <!-- Hover glow effect -->
-                <div class="absolute inset-0 bg-gradient-to-r from-violet-600/20 to-cyan-600/20 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                <!-- FIXED: Hover glow effect with pointer-events-none -->
+                <div class="absolute inset-0 bg-gradient-to-r from-violet-600/20 to-cyan-600/20 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10"></div>
               </div>
             </div>
 
@@ -220,6 +227,19 @@ const form = useForm({
   image_ids: []
 })
 
+// FIXED: Method to toggle individual image selection
+const toggleImageSelection = (imageId) => {
+  const index = selectedImages.value.indexOf(imageId)
+  if (index > -1) {
+    selectedImages.value.splice(index, 1)
+  } else {
+    selectedImages.value.push(imageId)
+  }
+  
+  // Update select all state
+  selectAll.value = selectedImages.value.length === props.availableImages.length
+}
+
 // Methods
 const toggleSelectAll = () => {
   if (selectAll.value) {
@@ -233,10 +253,13 @@ const addSelectedImages = () => {
   if (selectedImages.value.length === 0) return
 
   form.image_ids = selectedImages.value
-  form.post(route('albums.add-images', props.album.id), {
+  form.post(route('albums.add-images', props.album.slug || props.album.id), {
     onSuccess: () => {
       selectedImages.value = []
       selectAll.value = false
+    },
+    onError: (errors) => {
+      console.error('Failed to add images:', errors)
     }
   })
 }
@@ -290,8 +313,20 @@ const getAlbumName = (albumId) => {
   opacity: 0;
 }
 
-/* Custom checkbox styling */
+/* Enhanced checkbox styling */
 input[type="checkbox"]:checked {
   background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='m13.854 3.646-7.5 7.5a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6 10.293l7.146-7.147a.5.5 0 0 1 .708.708z'/%3e%3c/svg%3e");
+  background-color: rgb(124 58 237);
+  border-color: rgb(124 58 237);
+}
+
+input[type="checkbox"]:focus {
+  outline: 2px solid rgb(139 92 246 / 0.5);
+  outline-offset: 2px;
+}
+
+/* Ensure proper stacking */
+.group:hover .z-30 {
+  z-index: 31;
 }
 </style>

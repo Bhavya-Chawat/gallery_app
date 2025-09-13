@@ -1,4 +1,3 @@
-
 <template>
   <AppLayout>
     <Head :title="album.title || 'Album'" />
@@ -57,11 +56,48 @@
                 </li>
               </ol>
             </nav>
-            <h2 class="text-2xl font-bold bg-gradient-to-r from-violet-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
-              <span class="inline-block animate-shimmer bg-gradient-to-r from-violet-400 via-white via-purple-400 to-cyan-400 bg-[length:400%_100%] bg-clip-text text-transparent">
-                {{ album.title }}
-              </span>
-            </h2>
+            <div class="flex items-center space-x-4">
+              <h2 class="text-2xl font-bold bg-gradient-to-r from-violet-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
+                <span class="inline-block animate-shimmer bg-gradient-to-r from-violet-400 via-white via-purple-400 to-cyan-400 bg-[length:400%_100%] bg-clip-text text-transparent">
+                  {{ album.title }}
+                </span>
+              </h2>
+              
+              <!-- FIXED: Privacy Badge in Header -->
+              <div class="flex-shrink-0">
+                <span
+                  class="inline-flex items-center px-3 py-1.5 text-sm font-semibold rounded-lg border-2 transition-all duration-300 backdrop-blur-sm shadow-lg"
+                  :class="{
+                    'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-emerald-500/20': album.privacy === 'public',
+                    'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-amber-500/20': album.privacy === 'unlisted',
+                    'bg-red-500/20 text-red-300 border-red-500/50 shadow-red-500/20': album.privacy === 'private'
+                  }"
+                >
+                  <!-- Privacy Icon -->
+                  <div class="flex items-center">
+                    <svg v-if="album.privacy === 'public'" class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
+                      <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/>
+                    </svg>
+                    <svg v-else-if="album.privacy === 'unlisted'" class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/>
+                    </svg>
+                    <svg v-else class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/>
+                    </svg>
+                    
+                    <div class="w-2 h-2 rounded-full mr-2 animate-pulse"
+                         :class="{
+                           'bg-emerald-400': album.privacy === 'public',
+                           'bg-amber-400': album.privacy === 'unlisted',
+                           'bg-red-400': album.privacy === 'private'
+                         }">
+                    </div>
+                    <span class="capitalize font-bold">{{ album.privacy }}</span>
+                  </div>
+                </span>
+              </div>
+            </div>
           </div>
           
           <!-- Album Management Actions -->
@@ -94,77 +130,106 @@
     <div class="relative z-10 py-8 px-4 sm:px-6 lg:px-8">
       <div class="max-w-7xl mx-auto space-y-8">
         
-        <!-- Album Info Hero -->
+        <!-- FIXED: Album Info Hero with Better Layout -->
         <div class="backdrop-blur-xl bg-white/5 border border-white/10 shadow-2xl rounded-2xl overflow-hidden hover:shadow-violet-500/10 transition-all duration-500 hover:border-violet-500/30 animate-fade-in-up">
           <div class="bg-gradient-to-r from-violet-500/10 via-purple-500/10 to-cyan-500/10 p-8 border-b border-white/10">
-            <div class="flex items-start justify-between">
-              <div class="flex-1 space-y-4">
-                <h1 class="text-4xl font-bold bg-gradient-to-r from-white via-violet-200 to-cyan-200 bg-clip-text text-transparent">
+            <div class="space-y-6">
+              <!-- Title and Description -->
+              <div>
+                <h1 class="text-4xl font-bold bg-gradient-to-r from-white via-violet-200 to-cyan-200 bg-clip-text text-transparent mb-4">
                   {{ album.title }}
                 </h1>
                 <p v-if="album.description" 
-                   class="text-lg text-slate-300 leading-relaxed max-w-3xl">
+                   class="text-lg text-slate-300 leading-relaxed max-w-4xl">
                   {{ album.description }}
                 </p>
-                
-                <!-- Album Stats -->
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-4">
-                  <div class="text-center p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-violet-500/30 transition-all duration-300 group">
-                    <div class="text-2xl font-bold bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent">
-                      {{ album.images_count || 0 }}
-                    </div>
-                    <div class="text-sm text-slate-400 group-hover:text-slate-300 transition-colors">Images</div>
-                  </div>
-                  <div class="text-center p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-cyan-500/30 transition-all duration-300 group">
-                    <div class="text-lg font-semibold capitalize bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
-                      {{ album.privacy }}
-                    </div>
-                    <div class="text-sm text-slate-400 group-hover:text-slate-300 transition-colors">Privacy</div>
-                  </div>
-                  <div class="text-center p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-purple-500/30 transition-all duration-300 group">
-                    <div class="text-sm font-medium text-purple-300">
-                      {{ formatDate(album.created_at) }}
-                    </div>
-                    <div class="text-sm text-slate-400 group-hover:text-slate-300 transition-colors">Created</div>
-                  </div>
-                  <div class="text-center p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-violet-500/30 transition-all duration-300 group">
-                    <div class="text-sm font-medium text-violet-300">
-                      {{ album.owner?.name }}
-                    </div>
-                    <div class="text-sm text-slate-400 group-hover:text-slate-300 transition-colors">Owner</div>
-                  </div>
-                </div>
               </div>
               
-              <!-- Privacy Badge -->
-              <div class="ml-6">
-                <div class="relative group">
-                  <span
-                    class="px-4 py-2 text-sm font-medium rounded-xl border-2 transition-all duration-300 backdrop-blur-sm"
-                    :class="{
-                      'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:border-emerald-400 hover:shadow-lg hover:shadow-emerald-500/20': album.privacy === 'public',
-                      'bg-amber-500/20 text-amber-300 border-amber-500/40 hover:border-amber-400 hover:shadow-lg hover:shadow-amber-500/20': album.privacy === 'unlisted',
-                      'bg-red-500/20 text-red-300 border-red-500/40 hover:border-red-400 hover:shadow-lg hover:shadow-red-500/20': album.privacy === 'private'
-                    }"
-                  >
-                    <span class="flex items-center">
-                      <div class="w-2 h-2 rounded-full mr-2 animate-pulse"
-                           :class="{
-                             'bg-emerald-400': album.privacy === 'public',
-                             'bg-amber-400': album.privacy === 'unlisted',
-                             'bg-red-400': album.privacy === 'private'
-                           }">
-                      </div>
-                      {{ album.privacy }}
-                    </span>
-                  </span>
-                  <div class="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300"
-                       :class="{
-                         'bg-emerald-500/10': album.privacy === 'public',
-                         'bg-amber-500/10': album.privacy === 'unlisted',
-                         'bg-red-500/10': album.privacy === 'private'
-                       }">
+              <!-- FIXED: Album Stats Grid with Better Privacy Display -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <!-- Images Count -->
+                <div class="text-center p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-violet-500/30 transition-all duration-300 group">
+                  <div class="text-2xl font-bold bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent">
+                    {{ album.images_count || 0 }}
                   </div>
+                  <div class="text-sm text-slate-400 group-hover:text-slate-300 transition-colors">Images</div>
+                </div>
+                
+                <!-- FIXED: Enhanced Privacy Status Card -->
+                <div class="text-center p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 transition-all duration-300 group"
+                     :class="{
+                       'hover:border-emerald-500/50 hover:bg-emerald-500/5': album.privacy === 'public',
+                       'hover:border-amber-500/50 hover:bg-amber-500/5': album.privacy === 'unlisted',
+                       'hover:border-red-500/50 hover:bg-red-500/5': album.privacy === 'private'
+                     }">
+                  <div class="flex flex-col items-center space-y-2">
+                    <!-- Privacy Icon -->
+                    <div class="p-2 rounded-lg"
+                         :class="{
+                           'bg-emerald-500/20': album.privacy === 'public',
+                           'bg-amber-500/20': album.privacy === 'unlisted',
+                           'bg-red-500/20': album.privacy === 'private'
+                         }">
+                      <!-- Public Eye Icon -->
+                      <svg v-if="album.privacy === 'public'" class="w-5 h-5"
+                           :class="'text-emerald-400'"
+                           fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
+                        <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/>
+                      </svg>
+                      <!-- Unlisted Link Icon -->
+                      <svg v-else-if="album.privacy === 'unlisted'" class="w-5 h-5"
+                           :class="'text-amber-400'"
+                           fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd"/>
+                      </svg>
+                      <!-- Private Lock Icon -->
+                      <svg v-else class="w-5 h-5"
+                           :class="'text-red-400'"
+                           fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/>
+                      </svg>
+                    </div>
+                    <!-- Privacy Text -->
+                    <div class="text-lg font-semibold capitalize"
+                         :class="{
+                           'text-emerald-300': album.privacy === 'public',
+                           'text-amber-300': album.privacy === 'unlisted',
+                           'text-red-300': album.privacy === 'private'
+                         }">
+                      {{ album.privacy }}
+                    </div>
+                  </div>
+                  <div class="text-sm text-slate-400 group-hover:text-slate-300 transition-colors mt-1">Privacy</div>
+                </div>
+                
+                <!-- Created Date -->
+                <div class="text-center p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-purple-500/30 transition-all duration-300 group">
+                  <div class="text-sm font-medium text-purple-300">
+                    {{ formatDate(album.created_at) }}
+                  </div>
+                  <div class="text-sm text-slate-400 group-hover:text-slate-300 transition-colors">Created</div>
+                </div>
+                
+                <!-- Owner -->
+                <div class="text-center p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-violet-500/30 transition-all duration-300 group">
+                  <div class="flex flex-col items-center space-y-2">
+                    <div class="w-8 h-8 bg-gradient-to-r from-violet-500 to-cyan-500 rounded-full flex items-center justify-center text-sm font-bold text-white">
+                      {{ album.owner?.name?.charAt(0)?.toUpperCase() || '?' }}
+                    </div>
+                    <div class="text-sm font-medium text-violet-300 truncate max-w-full">
+                      {{ album.owner?.name || 'Unknown' }}
+                    </div>
+                  </div>
+                  <div class="text-sm text-slate-400 group-hover:text-slate-300 transition-colors">Owner</div>
+                </div>
+                
+                <!-- Updated Date -->
+                <div class="text-center p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-cyan-500/30 transition-all duration-300 group">
+                  <div class="text-sm font-medium text-cyan-300">
+                    {{ album.updated_at ? formatDate(album.updated_at) : 'Never' }}
+                  </div>
+                  <div class="text-sm text-slate-400 group-hover:text-slate-300 transition-colors">Updated</div>
                 </div>
               </div>
             </div>
@@ -321,7 +386,7 @@
                   class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-violet-600 to-cyan-600 
                          hover:from-violet-500 hover:to-cyan-500 text-white font-semibold rounded-xl 
                          transition-all duration-300 transform hover:scale-105 hover:shadow-2xl hover:shadow-violet-500/25 
-                         border border-violet-500/30 group"
+                         border border-violet-500/30 group relative overflow-hidden"
                 >
                   <PlusIcon class="h-5 w-5 mr-3 group-hover:rotate-12 transition-transform duration-300" />
                   Add Your First Images

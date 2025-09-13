@@ -87,12 +87,13 @@
 
                 <!-- Action Buttons -->
                 <div class="ml-6 flex items-center space-x-3">
-                  <!-- Like Button -->
+                  <!-- FIXED: Like Button with proper type -->
                   <LikeButton
-                    likeable-type="App\Models\Image"
-                    :likeable-id="image.id.toString()"
+                    likeable-type="image"
+                    :likeable-id="image.id"
                     :initial-liked="userLike"
                     :initial-likes-count="image.likes_count"
+                    :key="`like-${image.id}-${userLike}`"
                   />
 
                   <!-- Add to Collection Button -->
@@ -161,14 +162,14 @@
                 </div>
               </div>
 
-              <!-- Collections this image belongs to -->
+              <!-- FIXED: Collections this image belongs to (using slug) -->
               <div v-if="image.collections && image.collections.length" class="mt-6">
                 <h3 class="text-sm font-medium text-gray-900 mb-2">Collections</h3>
                 <div class="flex flex-wrap gap-2">
                   <Link
                     v-for="collection in image.collections"
                     :key="collection.id"
-                    :href="route('collections.show', collection.id)"
+                    :href="route('collections.show', collection.slug || collection.id)"
                     class="inline-flex items-center px-3 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-800 hover:bg-gray-200 transition-colors"
                   >
                     <FolderIcon class="h-3 w-3 mr-1" />
@@ -184,7 +185,7 @@
                   <div class="text-sm text-gray-500">Views</div>
                 </div>
                 <div>
-                  <div class="text-2xl font-bold text-gray-900">{{ formatNumber(image.likes_count) }}</div>
+                  <div class="text-2xl font-bold text-gray-900">{{ formatNumber(currentLikesCount) }}</div>
                   <div class="text-sm text-gray-500">Likes</div>
                 </div>
                 <div>
@@ -264,25 +265,24 @@
                     </div>
                     
                     <!-- Comment Actions -->
-<!-- AFTER: -->
-<div class="mt-2 flex items-center space-x-4 text-xs text-gray-500">
-  <button
-    v-if="auth.user"
-    @click="replyToComment(comment)"
-    class="hover:text-blue-500 transition-colors"
-  >
-    Reply
-  </button>
-  
-  <button
-    v-if="can.moderate || comment.user?.id === auth.user?.id"
-    @click="deleteComment(comment)"
-    class="hover:text-red-500 transition-colors"
-  >
-    Delete
-  </button>
-</div>
-
+                    <div class="mt-2 flex items-center space-x-4 text-xs text-gray-500">
+    
+                      <button
+                        v-if="auth.user"
+                        @click="replyToComment(comment)"
+                        class="hover:text-blue-500 transition-colors"
+                      >
+                        Reply
+                      </button>
+                      
+                      <button
+                        v-if="can.moderate || comment.user?.id === auth.user?.id"
+                        @click="deleteComment(comment)"
+                        class="hover:text-red-500 transition-colors"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -403,7 +403,7 @@
       </div>
     </div>
 
-    <!-- Add to Collection Modal -->
+    <!-- FIXED: Add to Collection Modal with updated event handlers -->
     <CollectionModal
       :show="showCollectionModal"
       :image="image"
@@ -417,6 +417,7 @@
 import { ref, computed } from 'vue'
 import { Head, Link, router } from '@inertiajs/vue3'
 import route from 'ziggy-js'
+import axios from 'axios'
 import {
   ChevronRightIcon,
   ChevronDownIcon,
@@ -453,8 +454,9 @@ const showCollectionModal = ref(false)
 const loadingComments = ref(false)
 const hasMoreComments = ref(false)
 
-// Reactive counters
+// FIXED: Reactive counters that update independently
 const currentCommentCount = computed(() => currentComments.value.length)
+const currentLikesCount = ref(props.image.likes_count || 0)
 
 const formatNumber = (number) => {
   if (number >= 1000000) {
@@ -516,49 +518,29 @@ const handleImageError = () => {
   imageError.value = true
 }
 
-// FIXED: Comments with proper error handling
+// FIXED: Use axios directly instead of router.post to prevent page reloads
 const submitComment = async () => {
-  if (!newComment.value.trim()) return
+  if (!newComment.value.trim() || submittingComment.value) return
   
   submittingComment.value = true
   
   try {
-    router.post(route('images.comments.store', props.image.id), {
-      body: newComment.value
-    }, {
-      onSuccess: (page) => {
-        // Add comment to local state
-        if (page.props.newComment) {
-          currentComments.value.unshift(page.props.newComment)
-        }
-        newComment.value = ''
-      },
-      onError: (errors) => {
-        console.error('Failed to post comment:', errors)
-      },
-      onFinish: () => {
-        submittingComment.value = false
-      }
-    })
-  } catch (error) {
-    console.error('Failed to post comment:', error)
-    submittingComment.value = false
-  }
-}
-
-const toggleCommentLike = async (comment) => {
-  if (!props.auth.user) return
-  
-  try {
-    const response = await axios.post(route('likes.toggle'), {
-      likeable_type: 'App\\Models\\Comment',
-      likeable_id: comment.id.toString()
+    // Use slug if available, fallback to ID
+    const imageIdentifier = props.image.slug || props.image.id
+    const response = await axios.post(route('images.comments.store', imageIdentifier), {
+      body: newComment.value.trim()
     })
     
-    comment.user_has_liked = response.data.liked
-    comment.likes_count = response.data.likes_count
+    if (response.data.comment) {
+      // Add comment to local state without page reload
+      currentComments.value.unshift(response.data.comment)
+      newComment.value = ''
+    }
   } catch (error) {
-    console.error('Failed to toggle comment like:', error)
+    console.error('Failed to post comment:', error)
+    alert('Failed to post comment. Please try again.')
+  } finally {
+    submittingComment.value = false
   }
 }
 
@@ -567,20 +549,22 @@ const replyToComment = (comment) => {
   document.querySelector('textarea')?.focus()
 }
 
+// FIXED: Use axios for comment deletion to prevent page reload
 const deleteComment = async (comment) => {
   if (!confirm('Are you sure you want to delete this comment?')) return
   
   try {
-    router.delete(route('comments.destroy', comment.id), {
-      onSuccess: () => {
-        const index = currentComments.value.findIndex(c => c.id === comment.id)
-        if (index > -1) {
-          currentComments.value.splice(index, 1)
-        }
-      }
-    })
+    // Use slug if available
+    const commentIdentifier = comment.slug || comment.id
+    await axios.delete(route('comments.destroy', commentIdentifier))
+    
+    const index = currentComments.value.findIndex(c => c.id === comment.id)
+    if (index > -1) {
+      currentComments.value.splice(index, 1)
+    }
   } catch (error) {
     console.error('Failed to delete comment:', error)
+    alert('Failed to delete comment. Please try again.')
   }
 }
 
@@ -591,11 +575,22 @@ const loadMoreComments = () => {
   loadingComments.value = false
 }
 
+// FIXED: Handle collection addition with slug support
 const onAddedToCollection = (collection) => {
   if (!props.image.collections) {
     props.image.collections = []
   }
-  props.image.collections.push(collection)
+  
+  // Ensure the collection has both slug and id for compatibility
+  const collectionToAdd = {
+    ...collection,
+    slug: collection.slug || collection.id // Ensure slug exists
+  }
+  
+  props.image.collections.push(collectionToAdd)
+  
+  // Optional: Show success message
+  console.log(`Added "${props.image.title || 'Untitled'}" to collection "${collection.title}"`)
 }
 
 const copyLink = () => {
@@ -623,7 +618,7 @@ const shareImage = () => {
 
 const downloadImage = () => {
   const link = document.createElement('a')
-  link.href = route('images.download', props.image.slug)
+  link.href = route('images.download', props.image.slug || props.image.id)
   link.download = props.image.original_filename || 'image'
   link.style.display = 'none'
   document.body.appendChild(link)
@@ -632,8 +627,9 @@ const downloadImage = () => {
 }
 
 const downloadVersion = (version) => {
+  const imageIdentifier = props.image.slug || props.image.id
   const link = document.createElement('a')
-  link.href = route('images.download', [props.image.slug, { variant: version.variant }])
+  link.href = route('images.download', [imageIdentifier, { variant: version.variant }])
   link.download = `${props.image.original_filename}_${version.variant}` || 'image'
   link.style.display = 'none'
   document.body.appendChild(link)
@@ -642,8 +638,9 @@ const downloadVersion = (version) => {
 }
 
 const downloadWithWatermark = () => {
+  const imageIdentifier = props.image.slug || props.image.id
   const link = document.createElement('a')
-  link.href = route('images.download', [props.image.slug, { watermark: 1 }])
+  link.href = route('images.download', [imageIdentifier, { watermark: 1 }])
   link.download = `watermarked_${props.image.original_filename}` || 'image'
   link.style.display = 'none'
   document.body.appendChild(link)
@@ -652,12 +649,14 @@ const downloadWithWatermark = () => {
 }
 
 const togglePublish = () => {
-  router.post(route('images.toggle-publish', props.image.slug))
+  const imageIdentifier = props.image.slug || props.image.id
+  router.post(route('images.toggle-publish', imageIdentifier))
 }
 
 const deleteImage = () => {
   if (confirm('Are you sure you want to delete this image? This action cannot be undone.')) {
-    router.delete(route('images.destroy', props.image.slug))
+    const imageIdentifier = props.image.slug || props.image.id
+    router.delete(route('images.destroy', imageIdentifier))
   }
 }
 </script>
