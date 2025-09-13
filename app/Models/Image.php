@@ -160,22 +160,31 @@ class Image extends Model
             return $this->getOriginalUrl();
         }
 
-        return Storage::disk('s3')->url($version->storage_path);
+        return Storage::disk('minio')->url($version->storage_path);
     }
 
     public function getOriginalUrl(): string
     {
-        return Storage::disk('s3')->url($this->storage_path);
+        return Storage::disk('minio')->url($this->storage_path);
     }
 
-    public function getSignedUrl(string $variant = 'original', int $ttl = 300): string
+    public function getSignedUrl(string $variant = "original", int $ttl = 300): string
     {
-        $path = $variant === 'original' 
+        $path = $variant === "original" 
             ? $this->storage_path 
-            : $this->versions()->where('variant', $variant)->first()?->storage_path ?? $this->storage_path;
-
-        return Storage::disk('s3')->temporaryUrl($path, now()->addSeconds($ttl));
+            : $this->versions()->where("variant", $variant)->first()?->storage_path ?? $this->storage_path;
+        
+        // Get signed URL and fix internal Docker hostname
+        $url = Storage::disk("minio")->temporaryUrl($path, now()->addSeconds($ttl));
+        return str_replace("minio:9000", "localhost:9000", $url);
     }
+
+public function collections(): BelongsToMany
+{
+    return $this->belongsToMany(Collection::class, 'collection_image') // Use collection_image
+        ->withPivot(['added_at', 'position'])
+        ->withTimestamps();
+}
 
     // Status Methods
     public function isPublic(): bool

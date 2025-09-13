@@ -1,11 +1,11 @@
 services:
     laravel.test:
         build:
-            context: './vendor/laravel/sail/runtimes/8.4'
+            context: ./vendor/laravel/sail/runtimes/8.4
             dockerfile: Dockerfile
             args:
                 WWWGROUP: '${WWWGROUP}'
-        image: 'sail-8.4/app'
+        image: sail-8.4/app
         extra_hosts:
             - 'host.docker.internal:host-gateway'
         ports:
@@ -87,6 +87,14 @@ services:
                 - local
             retries: 3
             timeout: 5s
+    minio-create-bucket:
+        image: 'minio/mc:latest'
+        depends_on:
+            minio:
+                condition: service_healthy
+        networks:
+            - sail
+        entrypoint: "/bin/sh -c \" echo 'Setting up MinIO bucket...'; sleep 10; mc alias set minio http://minio:9000 sail password; mc mb minio/gallery-images --ignore-existing; mc policy set download minio/gallery-images; mc policy info minio/gallery-images; echo 'Bucket configured successfully'; exit 0; \"\n"
     mailpit:
         image: 'axllent/mailpit:latest'
         ports:

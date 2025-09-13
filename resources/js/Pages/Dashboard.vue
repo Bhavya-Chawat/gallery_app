@@ -1,164 +1,472 @@
 <template>
-  <AuthenticatedLayout>
+  <AppLayout>
+    <Head title="Dashboard" />
+
+    <!-- Premium Animated Background System -->
+    <div class="fixed inset-0 overflow-hidden -z-10">
+      <!-- Enhanced Base Background -->
+      <div class="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        
+        <!-- Advanced Animated Mesh Background -->
+        <svg class="absolute inset-0 w-full h-full opacity-20" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <defs>
+            <pattern id="dashboard-mesh" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+              <circle cx="10" cy="10" r="1.5" fill="currentColor" class="text-violet-500/40">
+                <animate attributeName="r" values="1.5;3;1.5" dur="6s" repeatCount="indefinite"/>
+              </circle>
+              <circle cx="5" cy="15" r="1" fill="currentColor" class="text-cyan-500/30">
+                <animate attributeName="r" values="1;2.5;1" dur="8s" repeatCount="indefinite"/>
+              </circle>
+            </pattern>
+            <linearGradient id="dashboard-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:#8b5cf6">
+                <animate attributeName="stop-color" 
+                  values="#8b5cf6;#06b6d4;#a855f7;#8b5cf6" 
+                  dur="8s" 
+                  repeatCount="indefinite" />
+              </stop>
+              <stop offset="50%" style="stop-color:#a855f7">
+                <animate attributeName="stop-color" 
+                  values="#a855f7;#8b5cf6;#06b6d4;#a855f7" 
+                  dur="8s" 
+                  repeatCount="indefinite" />
+              </stop>
+              <stop offset="100%" style="stop-color:#06b6d4">
+                <animate attributeName="stop-color" 
+                  values="#06b6d4;#a855f7;#8b5cf6;#06b6d4" 
+                  dur="8s" 
+                  repeatCount="indefinite" />
+              </stop>
+            </linearGradient>
+          </defs>
+          
+          <rect width="100" height="100" fill="url(#dashboard-mesh)"/>
+          <path d="M0,20 L100,50 L100,100 L0,70 Z" fill="url(#dashboard-gradient)" opacity="0.1">
+            <animateTransform 
+              attributeName="transform" 
+              type="translate" 
+              values="0,0;10,-4;0,0" 
+              dur="12s" 
+              repeatCount="indefinite" />
+          </path>
+        </svg>
+        
+        <!-- Enhanced Floating Orbs -->
+        <div class="absolute top-20 left-16 w-72 h-72 bg-gradient-to-r from-violet-500/15 to-purple-500/15 rounded-full blur-3xl animate-pulse-slow opacity-60"></div>
+        <div class="absolute top-40 right-20 w-96 h-96 bg-gradient-to-l from-cyan-500/12 to-violet-500/12 rounded-full blur-3xl animate-pulse-slow delay-1000 opacity-50"></div>
+        <div class="absolute bottom-32 left-1/4 w-64 h-64 bg-gradient-to-t from-purple-500/10 to-cyan-500/10 rounded-full blur-3xl animate-pulse-slow delay-2000 opacity-40"></div>
+        
+        <!-- 20-Particle Float System -->
+        <div class="absolute inset-0">
+          <div v-for="i in 20" :key="`dash-particle-${i}`" 
+               :class="[
+                 'absolute w-2 h-2 rounded-full opacity-50',
+                 i % 4 === 0 ? 'bg-gradient-to-r from-violet-400/30 to-purple-400/30' :
+                 i % 4 === 1 ? 'bg-gradient-to-r from-cyan-400/30 to-violet-400/30' :
+                 i % 4 === 2 ? 'bg-gradient-to-r from-purple-400/30 to-cyan-400/30' :
+                 'bg-gradient-to-r from-violet-400/30 to-cyan-400/30',
+                 'animate-float-organic'
+               ]"
+               :style="{
+                 left: Math.random() * 100 + '%',
+                 top: Math.random() * 100 + '%',
+                 animationDelay: Math.random() * 10 + 's',
+                 animationDuration: (7 + Math.random() * 6) + 's'
+               }">
+          </div>
+        </div>
+
+        <!-- Gradient Overlay Layers -->
+        <div class="absolute inset-0 bg-gradient-to-br from-violet-900/20 via-transparent to-cyan-900/20"></div>
+      </div>
+    </div>
+
     <template #header>
-      <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-        Dashboard
-      </h2>
+      <div class="flex items-center justify-between animate-fade-in-down">
+        <h2 class="font-black text-2xl leading-tight">
+          <span class="bg-gradient-to-r from-violet-300 via-white to-cyan-300 bg-clip-text text-transparent 
+                       animate-shimmer-enhanced bg-size-300 bg-pos-0 filter drop-shadow-sm">
+            Dashboard
+          </span>
+        </h2>
+        <div class="flex items-center space-x-4">
+          <Link
+            v-if="canUpload"
+            href="/upload"
+            class="group relative inline-flex items-center px-6 py-3 border border-transparent rounded-xl 
+                   font-bold text-sm text-white uppercase tracking-wider 
+                   bg-gradient-to-r from-violet-600 via-purple-600 to-cyan-600 
+                   hover:from-violet-700 hover:via-purple-700 hover:to-cyan-700
+                   focus:outline-none focus:ring-4 focus:ring-violet-500/30
+                   transition-all duration-500 hover:scale-105 transform
+                   shadow-lg hover:shadow-2xl hover:shadow-violet-500/30
+                   before:absolute before:-inset-1 before:bg-gradient-to-r before:from-violet-500/20 
+                   before:to-cyan-500/20 before:rounded-xl before:blur-lg before:opacity-0 
+                   before:group-hover:opacity-100 before:transition-all before:duration-500"
+          >
+            <PlusIcon class="h-5 w-5 mr-2 group-hover:rotate-90 transition-transform duration-300" />
+            Upload Images
+          </Link>
+        </div>
+      </div>
     </template>
 
-    <div class="py-12">
-      <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
-        <!-- Welcome Card -->
-        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-          <div class="p-6 text-gray-900">
-            <div class="flex items-center space-x-4">
-              <div class="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center">
-                <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                </svg>
-              </div>
-              <div>
-                <h3 class="text-2xl font-bold">Welcome back, {{ $page.props.auth.user.name }}!</h3>
-                <p class="text-gray-600">Manage your image gallery and organize your photos.</p>
+    <div class="py-12 relative z-10">
+      <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-8">
+        
+        <!-- Welcome Message -->
+        <div class="animate-fade-in-up" style="animation-delay: 0.1s">
+          <div class="relative">
+            <!-- Glow effect -->
+            <div class="absolute -inset-0.5 bg-gradient-to-r from-violet-500/20 to-cyan-500/20 rounded-2xl blur-lg opacity-60"></div>
+            
+            <!-- Main card -->
+            <div class="relative bg-white/8 backdrop-blur-xl border border-white/20 rounded-2xl p-8 
+                        shadow-2xl hover:bg-white/12 hover:border-white/30 transition-all duration-500
+                        hover:shadow-violet-500/10 hover:shadow-2xl transform hover:scale-[1.02]">
+              <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-gradient-to-r from-violet-500 to-cyan-500 rounded-xl 
+                            flex items-center justify-center shadow-lg">
+                  <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m0 0V3a1 1 0 011 1v1M7 4V3a1 1 0 011-1v0M7 4H5a2 2 0 00-2 2v10a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2h-2M7 4h10"/>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="text-xl font-bold text-white">
+                    Welcome back, 
+                    <span class="bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent">
+                      {{ user?.name || 'User' }}
+                    </span>!
+                  </h3>
+                  <p class="mt-1 text-slate-300">
+                    Here's what's happening with your 
+                    <span class="text-violet-300 font-medium">Visual Gallery</span> 
+                    today.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
+        </div>
+
+        <!-- Storage Usage -->
+        <div v-if="storageUsed !== undefined && storageQuota !== undefined" class="animate-fade-in-up" style="animation-delay: 0.2s">
+          <StorageUsageCard
+            :used="storageUsed"
+            :quota="storageQuota"
+            :percentage="storageUsagePercentage"
+          />
         </div>
 
         <!-- Stats Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-            <div class="p-6">
-              <div class="flex items-center">
-                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                  </svg>
-                </div>
-                <div class="ml-4">
-                  <p class="text-sm font-medium text-gray-600">Total Images</p>
-                  <p class="text-2xl font-semibold text-gray-900">{{ stats.totalImages }}</p>
+        <div v-if="stats" class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 animate-fade-in-up" 
+             style="animation-delay: 0.3s">
+          <div class="animate-slide-in-up" style="animation-delay: 0.4s">
+            <StatCard
+              title="My Images"
+              :value="stats.myImages || 0"
+              icon="PhotoIcon"
+              href="/my/images"
+            />
+          </div>
+          <div class="animate-slide-in-up" style="animation-delay: 0.5s">
+            <StatCard
+              title="My Albums"
+              :value="stats.myAlbums || 0"
+              icon="FolderIcon"
+              href="/my/albums"
+            />
+          </div>
+          <div class="animate-slide-in-up" style="animation-delay: 0.6s">
+            <StatCard
+              title="Total Views"
+              :value="formatNumber(stats.totalViews || 0)"
+              icon="EyeIcon"
+            />
+          </div>
+          <div class="animate-slide-in-up" style="animation-delay: 0.7s">
+            <StatCard
+              title="Total Likes"
+              :value="formatNumber(stats.totalLikes || 0)"
+              icon="HeartIcon"
+            />
+          </div>
+        </div>
+
+        <!-- Admin Stats (if admin) -->
+        <div v-if="isAdmin && stats" 
+             class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 animate-fade-in-up" 
+             style="animation-delay: 0.4s">
+          <div class="animate-slide-in-up" style="animation-delay: 0.5s">
+            <StatCard
+              title="Total Users"
+              :value="stats.totalUsers || 0"
+              icon="UsersIcon"
+              color="green"
+              href="/admin/users"
+            />
+          </div>
+          <div class="animate-slide-in-up" style="animation-delay: 0.6s">
+            <StatCard
+              title="Total Images"
+              :value="stats.totalImages || 0"
+              icon="PhotoIcon"
+              color="green"
+            />
+          </div>
+          <div class="animate-slide-in-up" style="animation-delay: 0.7s">
+            <StatCard
+              title="Pending Comments"
+              :value="stats.pendingComments || 0"
+              icon="ChatBubbleLeftRightIcon"
+              color="yellow"
+              href="/admin/moderation/comments"
+            />
+          </div>
+          <div class="animate-slide-in-up" style="animation-delay: 0.8s">
+            <StatCard
+              title="System Health"
+              :value="systemStatus?.overall || 'Unknown'"
+              icon="ShieldCheckIcon"
+              :color="systemStatus?.color || 'gray'"
+              href="/admin/system"
+            />
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          
+          <!-- Recent Images -->
+          <div class="animate-fade-in-up" style="animation-delay: 0.5s">
+            <div class="relative group">
+              <!-- Glow effect -->
+              <div class="absolute -inset-0.5 bg-gradient-to-r from-violet-500/20 to-purple-500/20 
+                          rounded-2xl blur-lg opacity-60 group-hover:opacity-100 transition-all duration-500"></div>
+              
+              <!-- Main card -->
+              <div class="relative bg-white/8 backdrop-blur-xl border border-white/20 rounded-2xl 
+                          shadow-2xl hover:bg-white/12 hover:border-white/30 transition-all duration-500
+                          hover:shadow-violet-500/10 hover:shadow-2xl transform hover:scale-[1.01]
+                          overflow-hidden">
+                <div class="p-8">
+                  <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-3">
+                      <div class="w-10 h-10 bg-gradient-to-r from-violet-500 to-purple-500 rounded-xl 
+                                  flex items-center justify-center">
+                        <PhotoIcon class="h-5 w-5 text-white" />
+                      </div>
+                      <h3 class="text-xl font-bold text-white">Recent Images</h3>
+                    </div>
+                    <Link
+                      href="/my/images"
+                      class="text-sm bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent 
+                             hover:from-white hover:to-white transition-all duration-300 font-semibold
+                             hover:scale-105 transform"
+                    >
+                      View all
+                    </Link>
+                  </div>
+                  
+                  <div v-if="recentImages && recentImages.length > 0" class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    <div
+                      v-for="(image, index) in recentImages.slice(0, 6)"
+                      :key="image.id"
+                      class="group relative aspect-square bg-white/5 rounded-xl overflow-hidden 
+                             hover:shadow-lg hover:shadow-violet-500/20 transition-all duration-500
+                             transform hover:scale-105 border border-white/10 hover:border-white/20"
+                      :style="{ animationDelay: (index * 0.1) + 's' }"
+                    >
+                      <Link :href="`/images/${image.slug || image.id}`">
+                        <img
+                          :src="getImageUrl(image, 'small')"
+                          :alt="image.alt_text || image.title"
+                          class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                        >
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent 
+                                    opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+                      </Link>
+                    </div>
+                  </div>
+                  
+                  <div v-else class="text-center py-12">
+                    <div class="w-16 h-16 bg-gradient-to-r from-violet-500/20 to-cyan-500/20 
+                                rounded-2xl flex items-center justify-center mx-auto mb-4">
+                      <PhotoIcon class="h-8 w-8 text-slate-400" />
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-2">No images yet</h3>
+                    <p class="text-slate-300 mb-6">Get started by uploading your first image.</p>
+                    <div>
+                      <Link
+                        href="/upload"
+                        class="inline-flex items-center px-6 py-3 border border-transparent 
+                               rounded-xl font-semibold text-sm text-white 
+                               bg-gradient-to-r from-violet-600 to-cyan-600 
+                               hover:from-violet-700 hover:to-cyan-700
+                               focus:outline-none focus:ring-4 focus:ring-violet-500/30
+                               transition-all duration-300 hover:scale-105 transform
+                               shadow-lg hover:shadow-violet-500/30"
+                      >
+                        <PlusIcon class="h-5 w-5 mr-2" />
+                        Upload Images
+                      </Link>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-            <div class="p-6">
-              <div class="flex items-center">
-                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                  <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
-                  </svg>
-                </div>
-                <div class="ml-4">
-                  <p class="text-sm font-medium text-gray-600">Albums</p>
-                  <p class="text-2xl font-semibold text-gray-900">{{ stats.totalAlbums }}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-            <div class="p-6">
-              <div class="flex items-center">
-                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                  <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path>
-                  </svg>
-                </div>
-                <div class="ml-4">
-                  <p class="text-sm font-medium text-gray-600">Shared</p>
-                  <p class="text-2xl font-semibold text-gray-900">{{ stats.sharedImages }}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-            <div class="p-6">
-              <div class="flex items-center">
-                <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                  <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path>
-                  </svg>
-                </div>
-                <div class="ml-4">
-                  <p class="text-sm font-medium text-gray-600">Storage Used</p>
-                  <p class="text-2xl font-semibold text-gray-900">{{ stats.storageUsed }}</p>
+          <!-- Recent Albums -->
+          <div class="animate-fade-in-up" style="animation-delay: 0.6s">
+            <div class="relative group">
+              <!-- Glow effect -->
+              <div class="absolute -inset-0.5 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 
+                          rounded-2xl blur-lg opacity-60 group-hover:opacity-100 transition-all duration-500"></div>
+              
+              <!-- Main card -->
+              <div class="relative bg-white/8 backdrop-blur-xl border border-white/20 rounded-2xl 
+                          shadow-2xl hover:bg-white/12 hover:border-white/30 transition-all duration-500
+                          hover:shadow-cyan-500/10 hover:shadow-2xl transform hover:scale-[1.01]
+                          overflow-hidden">
+                <div class="p-8">
+                  <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-3">
+                      <div class="w-10 h-10 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-xl 
+                                  flex items-center justify-center">
+                        <FolderIcon class="h-5 w-5 text-white" />
+                      </div>
+                      <h3 class="text-xl font-bold text-white">Recent Albums</h3>
+                    </div>
+                    <Link
+                      href="/my/albums"
+                      class="text-sm bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent 
+                             hover:from-white hover:to-white transition-all duration-300 font-semibold
+                             hover:scale-105 transform"
+                    >
+                      View all
+                    </Link>
+                  </div>
+                  
+                  <div v-if="recentAlbums && recentAlbums.length > 0" class="space-y-4">
+                    <div
+                      v-for="(album, index) in recentAlbums.slice(0, 4)"
+                      :key="album.id"
+                      class="flex items-center p-4 bg-white/5 border border-white/10 rounded-xl 
+                             hover:bg-white/10 hover:border-white/20 hover:shadow-lg 
+                             hover:shadow-cyan-500/10 transition-all duration-500 group
+                             transform hover:scale-[1.02]"
+                      :style="{ animationDelay: (index * 0.1) + 's' }"
+                    >
+                      <div class="flex-shrink-0">
+                        <div class="w-12 h-12 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 
+                                    rounded-xl flex items-center justify-center border border-white/10">
+                          <FolderIcon class="h-6 w-6 text-cyan-400 group-hover:text-white transition-colors duration-300" />
+                        </div>
+                      </div>
+                      <div class="ml-4 flex-1 min-w-0">
+                        <Link
+                          :href="`/albums/${album.slug || album.id}`"
+                          class="text-base font-bold text-white hover:text-cyan-300 
+                                 transition-colors duration-300"
+                        >
+                          {{ album.title }}
+                        </Link>
+                        <p class="text-sm text-slate-400 mt-1 group-hover:text-slate-300 transition-colors duration-300">
+                          {{ album.images_count || 0 }} image{{ (album.images_count || 0) !== 1 ? 's' : '' }}
+                        </p>
+                      </div>
+                      <div class="text-xs text-slate-500 group-hover:text-slate-400 transition-colors duration-300">
+                        {{ formatDate(album.updated_at) }}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div v-else class="text-center py-12">
+                    <div class="w-16 h-16 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 
+                                rounded-2xl flex items-center justify-center mx-auto mb-4">
+                      <FolderIcon class="h-8 w-8 text-slate-400" />
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-2">No albums yet</h3>
+                    <p class="text-slate-300 mb-6">Create your first album to organize your images.</p>
+                    <div>
+                      <Link
+                        href="/albums/create"
+                        class="inline-flex items-center px-6 py-3 border border-transparent 
+                               rounded-xl font-semibold text-sm text-white 
+                               bg-gradient-to-r from-cyan-600 to-purple-600 
+                               hover:from-cyan-700 hover:to-purple-700
+                               focus:outline-none focus:ring-4 focus:ring-cyan-500/30
+                               transition-all duration-300 hover:scale-105 transform
+                               shadow-lg hover:shadow-cyan-500/30"
+                      >
+                        <PlusIcon class="h-5 w-5 mr-2" />
+                        Create Album
+                      </Link>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Quick Actions -->
-        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-          <div class="p-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Link
-                href="/upload"
-                class="flex items-center p-4 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
-              >
-                <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
-                  <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                  </svg>
+        <!-- Recent Activity (for admins) -->
+        <div v-if="isAdmin && recentActivities && recentActivities.length > 0" 
+             class="animate-fade-in-up" style="animation-delay: 0.7s">
+          <div class="relative group">
+            <!-- Glow effect -->
+            <div class="absolute -inset-0.5 bg-gradient-to-r from-purple-500/20 to-violet-500/20 
+                        rounded-2xl blur-lg opacity-60 group-hover:opacity-100 transition-all duration-500"></div>
+            
+            <!-- Main card -->
+            <div class="relative bg-white/8 backdrop-blur-xl border border-white/20 rounded-2xl 
+                        shadow-2xl hover:bg-white/12 hover:border-white/30 transition-all duration-500
+                        hover:shadow-purple-500/10 hover:shadow-2xl transform hover:scale-[1.01]
+                        overflow-hidden">
+              <div class="p-8">
+                <div class="flex items-center gap-3 mb-6">
+                  <div class="w-10 h-10 bg-gradient-to-r from-purple-500 to-violet-500 rounded-xl 
+                              flex items-center justify-center">
+                    <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                  </div>
+                  <h3 class="text-xl font-bold text-white">Recent Activity</h3>
                 </div>
-                <div class="ml-3">
-                  <p class="text-sm font-medium text-gray-900">Upload Images</p>
-                  <p class="text-xs text-gray-600">Add new photos to your gallery</p>
-                </div>
-              </Link>
-
-              <Link
-                href="/albums"
-                class="flex items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
-              >
-                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                  <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
-                  </svg>
-                </div>
-                <div class="ml-3">
-                  <p class="text-sm font-medium text-gray-900">Manage Albums</p>
-                  <p class="text-xs text-gray-600">Organize your photo collections</p>
-                </div>
-              </Link>
-
-              <Link
-                href="/gallery"
-                class="flex items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors"
-              >
-                <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                  <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
-                  </svg>
-                </div>
-                <div class="ml-3">
-                  <p class="text-sm font-medium text-gray-900">View Gallery</p>
-                  <p class="text-xs text-gray-600">Browse all your images</p>
-                </div>
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        <!-- Recent Activity -->
-        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-          <div class="p-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
-            <div class="space-y-3">
-              <div v-for="activity in recentActivity" :key="activity.id" class="flex items-center space-x-3">
-                <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                  <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                  </svg>
-                </div>
-                <div class="flex-1">
-                  <p class="text-sm text-gray-900">{{ activity.description }}</p>
-                  <p class="text-xs text-gray-500">{{ activity.time }}</p>
+                
+                <div class="flow-root">
+                  <ul role="list" class="-mb-8">
+                    <li
+                      v-for="(activity, index) in recentActivities.slice(0, 5)"
+                      :key="activity.id"
+                      class="relative pb-8 animate-slide-in-up"
+                      :style="{ animationDelay: (index * 0.1) + 's' }"
+                    >
+                      <span
+                        v-if="index !== recentActivities.slice(0, 5).length - 1"
+                        class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gradient-to-b 
+                               from-violet-500/50 to-cyan-500/50"
+                        aria-hidden="true"
+                      ></span>
+                      <div class="relative flex space-x-3">
+                        <div class="flex-shrink-0">
+                          <div class="w-8 h-8 bg-gradient-to-r from-violet-500/20 to-cyan-500/20 
+                                      rounded-full flex items-center justify-center border border-white/20">
+                            <component
+                              :is="getActivityIcon(activity.type)"
+                              class="h-4 w-4 text-violet-400"
+                            />
+                          </div>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                          <p class="text-sm text-slate-300 leading-relaxed">
+                            {{ activity.message }}
+                            <span class="text-slate-400 font-medium">{{ formatTimeAgo(activity.timestamp) }}</span>
+                          </p>
+                        </div>
+                      </div>
+                    </li>
+                  </ul>
                 </div>
               </div>
             </div>
@@ -166,37 +474,317 @@
         </div>
       </div>
     </div>
-  </AuthenticatedLayout>
+
+    <!-- Enhanced Modal -->
+    <div v-if="showRequestModal" class="fixed inset-0 z-50 overflow-y-auto">
+      <!-- Background overlay with blur -->
+      <div class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-500"></div>
+      
+      <!-- Modal content -->
+      <div class="flex min-h-full items-center justify-center p-4">
+        <div class="relative animate-modal-enter">
+          <!-- Glow effect -->
+          <div class="absolute -inset-1 bg-gradient-to-r from-violet-500/40 to-cyan-500/40 
+                      rounded-3xl blur-xl opacity-60"></div>
+          
+          <!-- Main modal -->
+          <div class="relative bg-white/10 backdrop-blur-2xl border border-white/20 
+                      rounded-3xl shadow-2xl max-w-md w-full mx-4 p-8
+                      hover:bg-white/15 hover:border-white/30 transition-all duration-500">
+            <div class="text-center">
+              <!-- Icon -->
+              <div class="mx-auto flex items-center justify-center w-16 h-16 
+                          bg-gradient-to-r from-violet-500 to-cyan-500 rounded-2xl mb-6">
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                </svg>
+              </div>
+              
+              <!-- Title -->
+              <h2 class="text-2xl font-black text-white mb-4">
+                <span class="bg-gradient-to-r from-violet-300 to-cyan-300 bg-clip-text text-transparent">
+                  Upload Access Required
+                </span>
+              </h2>
+              
+              <!-- Description -->
+              <p class="text-slate-300 mb-8 leading-relaxed">
+                You need Editor permissions to upload images. Request access from an administrator?
+              </p>
+              
+              <!-- Buttons -->
+              <div class="flex justify-center space-x-4">
+                <button 
+                  @click="requestAccess" 
+                  :disabled="form.processing"
+                  class="relative group px-6 py-3 bg-gradient-to-r from-violet-600 to-cyan-600 
+                         text-white font-bold rounded-xl hover:from-violet-700 hover:to-cyan-700
+                         focus:outline-none focus:ring-4 focus:ring-violet-500/30
+                         transition-all duration-300 hover:scale-105 transform
+                         shadow-lg hover:shadow-violet-500/30 disabled:opacity-50"
+                >
+                  <span v-if="form.processing" class="flex items-center gap-2">
+                    <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12a8 8 0 003.657 6.746l1.021-.408A6 6 0 016 12z"></path>
+                    </svg>
+                    Requesting...
+                  </span>
+                  <span v-else>Request Access</span>
+                </button>
+                
+                <button 
+                  @click="closeModal"
+                  class="px-6 py-3 bg-white/10 border border-white/20 text-white font-bold 
+                         rounded-xl hover:bg-white/20 hover:border-white/30
+                         focus:outline-none focus:ring-4 focus:ring-white/20
+                         transition-all duration-300 hover:scale-105 transform"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </AppLayout>
 </template>
 
 <script setup>
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Link } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { Head, Link, useForm } from '@inertiajs/vue3'
+import { ref, computed, onMounted } from 'vue'
+import AppLayout from '@/Layouts/AppLayout.vue'
+import StatCard from '@/Components/StatCard.vue'
+import StorageUsageCard from '@/Components/StorageUsageCard.vue'
+import {
+  PhotoIcon,
+  FolderIcon,
+  PlusIcon,
+  EyeIcon,
+  HeartIcon,
+  UsersIcon,
+  ChatBubbleLeftRightIcon,
+  ShieldCheckIcon
+} from '@heroicons/vue/24/outline'
 
-// Mock data - replace with real data from your backend
-const stats = ref({
-  totalImages: 127,
-  totalAlbums: 8,
-  sharedImages: 23,
-  storageUsed: '2.4 GB'
-});
+// Props with proper defaults
+const props = defineProps({
+  user: { type: Object, default: () => ({}) },
+  stats: { type: Object, default: () => ({}) },
+  recentImages: { type: Array, default: () => [] },
+  recentAlbums: { type: Array, default: () => [] },
+  recentActivities: { type: Array, default: () => [] },
+  storageUsed: { type: Number, default: 0 },
+  storageQuota: { type: Number, default: 0 },
+  canUpload: { type: Boolean, default: false },
+  isAdmin: { type: Boolean, default: false },
+  systemStatus: { type: Object, default: () => ({}) },
+})
 
-const recentActivity = ref([
-  {
-    id: 1,
-    description: 'Uploaded 5 new images to "Vacation 2024" album',
-    time: '2 hours ago'
-  },
-  {
-    id: 2,
-    description: 'Created new album "Nature Photography"',
-    time: '1 day ago'
-  },
-  {
-    id: 3,
-    description: 'Shared album "Wedding Photos" with 3 people',
-    time: '2 days ago'
+// Reactive data
+const showRequestModal = ref(false)
+
+// Form for requesting access
+const form = useForm({})
+
+// Computed properties
+const storageUsagePercentage = computed(() => {
+  if (!props.storageQuota || props.storageQuota === 0) return 0
+  return Math.round((props.storageUsed / props.storageQuota) * 100)
+})
+
+// Methods
+const formatNumber = (number) => {
+  if (!number || number === 0) return '0'
+  if (number >= 1000000) {
+    return (number / 1000000).toFixed(1) + 'M'
   }
-]);
+  if (number >= 1000) {
+    return (number / 1000).toFixed(1) + 'K'
+  }
+  return number.toString()
+}
+
+const formatDate = (date) => {
+  if (!date) return 'Unknown'
+  try {
+    return new Date(date).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric'
+    })
+  } catch (e) {
+    return 'Unknown'
+  }
+}
+
+const formatTimeAgo = (timestamp) => {
+  if (!timestamp) return 'Unknown'
+  try {
+    const now = new Date()
+    const time = new Date(timestamp)
+    const diffInSeconds = Math.floor((now - time) / 1000)
+    
+    if (diffInSeconds < 60) return 'just now'
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`
+    return `${Math.floor(diffInSeconds / 86400)}d ago`
+  } catch (e) {
+    return 'Unknown'
+  }
+}
+
+const getImageUrl = (image) => {
+  if (image.storage_path) {
+    return `http://localhost:9000/gallery-images/${image.storage_path}`
+  }
+  return '/images/placeholder.jpg'
+}
+const getActivityIcon = (type) => {
+  const icons = {
+    'upload': PhotoIcon,
+    'album': FolderIcon,
+    'user': UsersIcon,
+    'comment': ChatBubbleLeftRightIcon,
+    'system': ShieldCheckIcon,
+  }
+  return icons[type] || PhotoIcon
+}
+
+const requestAccess = () => {
+  form.post('/request/upload/access', {
+    onSuccess: () => {
+      showRequestModal.value = false
+      // Could show a success toast here
+    },
+    onError: () => {
+      // Could show an error toast here
+    }
+  })
+}
+
+const closeModal = () => {
+  showRequestModal.value = false
+}
+
+// Lifecycle
+onMounted(() => {
+  // Any initialization logic here
+})
 </script>
+
+<style scoped>
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes float-organic {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px) rotate(0deg);
+  }
+  33% {
+    transform: translateY(-10px) translateX(5px) rotate(1deg);
+  }
+  66% {
+    transform: translateY(5px) translateX(-5px) rotate(-1deg);
+  }
+}
+
+@keyframes fade-in-down {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in-up {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-up {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer-enhanced {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes modal-enter {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 4s ease-in-out infinite;
+}
+
+.animate-float-organic {
+  animation: float-organic 8s ease-in-out infinite;
+}
+
+.animate-fade-in-down {
+  animation: fade-in-down 0.8s ease-out forwards;
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.8s ease-out forwards;
+  opacity: 0;
+}
+
+.animate-slide-in-up {
+  animation: slide-in-up 0.6s ease-out forwards;
+  opacity: 0;
+}
+
+.animate-shimmer-enhanced {
+  animation: shimmer-enhanced 3s ease-in-out infinite;
+  background-size: 300% 300%;
+}
+
+.animate-modal-enter {
+  animation: modal-enter 0.3s ease-out forwards;
+}
+
+.bg-size-300 {
+  background-size: 300% 300%;
+}
+
+.bg-pos-0 {
+  background-position: 0% 50%;
+}
+
+.delay-1000 {
+  animation-delay: 1s;
+}
+
+.delay-2000 {
+  animation-delay: 2s;
+}
+</style>

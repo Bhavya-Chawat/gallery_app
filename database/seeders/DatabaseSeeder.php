@@ -17,11 +17,6 @@ class DatabaseSeeder extends Seeder
             SettingsSeeder::class,
         ]);
 
-        // Only seed demo data in local environment
-        if (app()->environment('local')) {
-            $this->call([
-                DemoDataSeeder::class,
-            ]);
-        }
+        // Demo data seeding disabled intentionally
     }
 }

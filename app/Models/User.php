@@ -19,10 +19,15 @@ class User extends Authenticatable implements MustVerifyEmail
         'email',
         'password',
         'avatar_path',
+        'bio',
+        'website',
+        'social_links',
+        'profile_visibility',
+        'show_email_publicly',
+        'show_stats_publicly',
         'storage_used_bytes',
         'storage_quota_bytes',
         'preferences',
-        'timezone',
         'last_login_at',
         'is_active',
         'email_notifications',
@@ -37,9 +42,12 @@ class User extends Authenticatable implements MustVerifyEmail
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
         'preferences' => 'array',
+        'social_links' => 'array',
         'last_login_at' => 'datetime',
         'is_active' => 'boolean',
         'email_notifications' => 'boolean',
+        'show_email_publicly' => 'boolean',
+        'show_stats_publicly' => 'boolean',
         'storage_used_bytes' => 'integer',
         'storage_quota_bytes' => 'integer',
     ];
@@ -81,10 +89,19 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     // Role and Permission Methods
-    public function hasRole(string $role): bool
-    {
+// In your User model, update the hasRole method:
+public function hasRole($role): bool
+{
+    if (is_string($role)) {
         return $this->roles()->where('slug', $role)->exists();
     }
+    
+    if (is_array($role)) {
+        return $this->roles()->whereIn('slug', $role)->exists();
+    }
+    
+    return false;
+}
 
     public function hasAnyRole(array $roles): bool
     {
@@ -114,18 +131,22 @@ class User extends Authenticatable implements MustVerifyEmail
         }
     }
 
-    // Storage Methods
+    // Storage Methods (CLEANED - NO DUPLICATES)
     public function getRemainingStorageBytes(): int
     {
-        return max(0, $this->storage_quota_bytes - $this->storage_used_bytes);
+        $quota = $this->storage_quota_bytes ?? 1073741824; // 1GB default
+        $used = $this->storage_used_bytes ?? 0;
+        return max(0, $quota - $used);
     }
 
     public function getStorageUsagePercentage(): float
     {
-        if ($this->storage_quota_bytes === 0) {
+        $quota = $this->storage_quota_bytes ?? 1073741824;
+        if ($quota === 0) {
             return 0;
         }
-        return ($this->storage_used_bytes / $this->storage_quota_bytes) * 100;
+        $used = $this->storage_used_bytes ?? 0;
+        return ($used / $quota) * 100;
     }
 
     public function canUpload(int $fileSizeBytes): bool
@@ -146,7 +167,7 @@ class User extends Authenticatable implements MustVerifyEmail
     // Utility Methods
     public function getAvatarUrl(): ?string
     {
-        return $this->avatar_path ? asset('storage/' . $this->avatar_path) : null;
+        return $this->avatar_path ? "http://localhost:9000/gallery-images/{$this->avatar_path}" : null;
     }
 
     public function updateLastLogin(): void

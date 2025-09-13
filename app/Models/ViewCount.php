@@ -31,20 +31,30 @@ class ViewCount extends Model
     }
 
     // Methods
-    public static function recordView(Model $viewable, array $metadata = []): void
-    {
-        static::updateOrCreate(
-            [
-                'viewable_type' => get_class($viewable),
-                'viewable_id' => $viewable->id,
-                'date' => now()->toDateString(),
-            ],
-            [
-                'count' => \DB::raw('count + 1'),
-                'metadata' => $metadata,
-            ]
-        );
+// Methods
+public static function recordView(Model $viewable, array $metadata = []): void
+{
+    $viewCount = static::where([
+        'viewable_type' => get_class($viewable),
+        'viewable_id' => $viewable->id,
+        'date' => now()->toDateString(),
+    ])->first();
+    
+    if ($viewCount) {
+        $viewCount->increment('count');
+        if (!empty($metadata)) {
+            $viewCount->update(['metadata' => $metadata]);
+        }
+    } else {
+        static::create([
+            'viewable_type' => get_class($viewable),
+            'viewable_id' => $viewable->id,
+            'date' => now()->toDateString(),
+            'count' => 1,
+            'metadata' => $metadata,
+        ]);
     }
+}
 
     // Scopes
     public function scopeForType($query, string $type)

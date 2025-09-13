@@ -182,7 +182,7 @@ Route::middleware(['auth:sanctum', 'active_user'])->prefix('v1')->group(function
     Route::post('/upload/presign', [UploadController::class, 'presign']);
     Route::post('/upload/complete', [UploadController::class, 'complete']);
     Route::get('/upload/status/{session}', [UploadController::class, 'status']);
-    Route::post('/upload/direct', [UploadController::class, 'direct']);
+    Route::post('/upload/direct', [UploadController::class, 'direct'])->name('upload.store');
 
     // Comments
     Route::get('/images/{image}/comments', [CommentApiController::class, 'index']);

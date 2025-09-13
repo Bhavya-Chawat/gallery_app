@@ -1,30 +1,30 @@
 {
-    "$schema": "https://json.schemastore.org/package.json",
-    "private": true,
-    "type": "module",
-    "scripts": {
-        "build": "vite build",
-        "dev": "vite"
-    },
-    "devDependencies": {
-        "@inertiajs/vue3": "^2.0.0",
-        "@tailwindcss/forms": "^0.5.3",
-        "@tailwindcss/vite": "^4.0.0",
-        "@vitejs/plugin-vue": "^6.0.1",
-        "@vue/compiler-sfc": "^3.5.21",
-        "@vue/tsconfig": "^0.8.1",
-        "autoprefixer": "^10.4.12",
-        "axios": "^1.11.0",
-        "concurrently": "^9.0.1",
-        "laravel-vite-plugin": "^2.0.0",
-        "postcss": "^8.4.31",
-        "tailwindcss": "^3.2.1",
-        "typescript": "^5.9.2",
-        "vite": "^7.0.4",
-        "vue": "^3.5.21"
-    },
-    "dependencies": {
-        "@headlessui/vue": "^1.7.23",
-        "@heroicons/vue": "^2.2.0"
-    }
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@tailwindcss/aspect-ratio": "0.4.2",
+    "@tailwindcss/forms": "0.5.3",
+    "@tailwindcss/typography": "0.5.10",
+    "@vitejs/plugin-vue": "^6.0.1",
+    "autoprefixer": "10.4.20",
+    "laravel-vite-plugin": "^2.0.1",
+    "postcss": "8.4.49",
+    "tailwindcss": "3.4.10",
+    "vite": "^7.1.5"
+  },
+  "dependencies": {
+    "@headlessui/vue": "^1.7.23",
+    "@heroicons/vue": "^2.1.5",
+    "@inertiajs/vue3": "1.2.0",
+    "@vueuse/core": "^13.9.0",
+    "axios": "^1.11.0",
+    "date-fns": "^4.1.0",
+    "lodash": "^4.17.21",
+    "vue": "3.5.12",
+    "ziggy-js": "^1.8.0"
+  }
 }

@@ -11,21 +11,20 @@ return new class extends Migration
         Schema::create('collections', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignId('curator_id')->constrained('users')->onDelete('cascade');
-            $table->string('title', 255);
-            $table->string('slug', 255)->unique();
+            $table->string('title');
+            $table->string('slug')->unique();
             $table->text('description')->nullable();
             $table->enum('privacy', ['public', 'unlisted', 'private'])->default('public');
             $table->uuid('cover_image_id')->nullable();
-            $table->integer('items_count')->default(0);
-            $table->boolean('is_published')->default(false);
+            $table->unsignedInteger('images_count')->default(0);
+            $table->boolean('is_published')->default(true);
             $table->timestamp('published_at')->nullable();
             $table->json('metadata')->nullable();
             $table->timestamps();
             $table->softDeletes();
-
-            $table->index(['curator_id', 'privacy', 'is_published']);
-            $table->index(['slug', 'privacy']);
-            $table->fullText(['title', 'description']);
+            
+            $table->index(['privacy', 'is_published']);
+            $table->index('curator_id');
         });
     }
 

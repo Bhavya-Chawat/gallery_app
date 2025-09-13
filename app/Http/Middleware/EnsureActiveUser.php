@@ -15,12 +15,24 @@ class EnsureActiveUser
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if ($request->user() && !$request->user()->is_active) {
-            auth()->logout();
-            return redirect()->route('login')
-                ->withErrors(['email' => 'Your account has been deactivated. Please contact an administrator.']);
+        $user = $request->user();
+
+        if (!$user) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Unauthenticated.'], 401);
+            }
+            return redirect()->route('login');
+        }
+
+        if (!$user->is_active) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Account is inactive.'], 403);
+            }
+            abort(403, 'Your account is inactive.');
         }
 
         return $next($request);
     }
 }
+
+
