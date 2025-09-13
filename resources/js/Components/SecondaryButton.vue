@@ -10,23 +10,6 @@ defineProps({
 <template>
     <button
         :type="type"
-        class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-widest text-gray-700 shadow-sm transition duration-150 ease-in-out hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-25"
-    >
-        <slot />
-    </button>
-</template>
-/* <script setup>
-defineProps({
-    type: {
-        type: String,
-        default: 'button',
-    },
-});
-</script>
-
-<template>
-    <button
-        :type="type"
         class="group relative inline-flex items-center rounded-lg border border-violet-500/30 bg-slate-800/50 backdrop-blur-sm px-6 py-3 text-xs font-semibold uppercase tracking-widest text-slate-300 shadow-lg shadow-slate-900/25 transition-all duration-300 ease-out hover:bg-gradient-to-r hover:from-slate-700/50 hover:to-slate-800/50 hover:text-white hover:border-violet-400/50 hover:shadow-xl hover:shadow-violet-500/20 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-25 transform hover:scale-105 active:scale-95 overflow-hidden"
     >
         <!-- Animated mesh background -->

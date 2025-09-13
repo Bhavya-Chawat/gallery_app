@@ -195,7 +195,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/images/{image:slug}/edit', [ImageController::class, 'edit'])->name('images.edit');
     Route::patch('/images/{image:slug}', [ImageController::class, 'update'])->name('images.update');
     Route::delete('/images/{image:slug}', [ImageController::class, 'destroy'])->name('images.destroy');
-    Route::post('/images/bulk-action', [ImageController::class, 'bulkAction'])->name('images.bulk-action');
+    Route::post('/images/bulk', [ImageController::class, 'bulkAction'])->name('images.bulk');
     Route::post('/images/{image:slug}/toggle-publish', [ImageController::class, 'togglePublish'])->name('images.toggle-publish');
 
     // Album Management (authenticated features)

@@ -1,12 +1,5 @@
 <template>
     <button
-        class="inline-flex items-center rounded-md border border-transparent bg-red-600 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition duration-150 ease-in-out hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 active:bg-red-700"
-    >
-        <slot />
-    </button>
-</template>
-/*<template>
-    <button
         class="relative inline-flex items-center rounded-xl border border-transparent overflow-hidden group
                bg-gradient-to-r from-red-600 via-red-500 to-orange-500
                px-6 py-3 text-xs font-semibold uppercase tracking-widest text-white 

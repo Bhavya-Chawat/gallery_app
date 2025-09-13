@@ -7,21 +7,6 @@ defineProps({
 </script>
 
 <template>
-    <div v-show="message">
-        <p class="text-sm text-red-600">
-            {{ message }}
-        </p>
-    </div>
-</template>
-/*<script setup>
-defineProps({
-    message: {
-        type: String,
-    },
-});
-</script>
-
-<template>
     <div v-show="message" class="relative overflow-hidden animate-slide-in-down">
         <!-- Glassmorphism background with gradient border -->
         <div class="relative rounded-lg bg-gradient-to-r from-red-500/10 via-rose-500/10 to-pink-500/10 backdrop-blur-sm border border-red-500/20 p-3 shadow-lg shadow-red-500/10">

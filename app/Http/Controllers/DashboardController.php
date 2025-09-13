@@ -19,12 +19,17 @@ class DashboardController extends Controller
     {
         $user = $request->user();
         
-        // Common data for all users
+        // Common data for all users - Fix user serialization
         $data = [
-            'user' => $user,
-            'storageUsed' => $user->storage_used_bytes ?? 0,
-            'storageQuota' => $user->storage_quota_bytes ?? 0,
-            'storageUsagePercentage' => $user->getStorageUsagePercentage(),
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'roles' => $user->roles->pluck('name')->toArray(), // Convert to array
+            ],
+            'storageUsed' => (int) ($user->storage_used_bytes ?? 0),
+            'storageQuota' => (int) ($user->storage_quota_bytes ?? 0),
+            'storageUsagePercentage' => (float) $user->getStorageUsagePercentage(),
         ];
 
         // Role-specific data
@@ -49,26 +54,19 @@ class DashboardController extends Controller
         return [
             'stats' => [
                 // Personal stats for admin
-                'myImages' => $user->images()->count(),
-                'myAlbums' => $user->albums()->count(),
-                'totalViews' => $user->images()->sum('views_count'),
-                'totalLikes' => $user->images()->sum('likes_count'),
+                'myImages' => (int) $user->images()->count(),
+                'myAlbums' => (int) $user->albums()->count(),
+                'totalViews' => (int) $user->images()->sum('views_count'),
+                'totalLikes' => (int) $user->images()->sum('likes_count'),
                 
                 // System-wide stats
-                'totalUsers' => User::where('is_active', true)->count(),
-                'totalImages' => Image::whereIn('privacy', ['public', 'unlisted'])->where('is_published', true)->count(),
-                'totalAlbums' => Album::whereIn('privacy', ['public', 'unlisted'])->where('is_published', true)->count(),
-                'pendingComments' => 0, // Simplified for now
+                'totalUsers' => (int) User::where('is_active', true)->count(),
+                'totalImages' => (int) Image::whereIn('privacy', ['public', 'unlisted'])->where('is_published', true)->count(),
+                'totalAlbums' => (int) Album::whereIn('privacy', ['public', 'unlisted'])->where('is_published', true)->count(),
+                'pendingComments' => 0,
             ],
-            'recentImages' => $user->images()
-                ->orderBy('created_at', 'desc')
-                ->take(8)
-                ->get(),
-            'recentAlbums' => $user->albums()
-                ->orderBy('updated_at', 'desc')
-                ->take(6)
-                ->withCount('images')
-                ->get(),
+            'recentImages' => $this->getSerializedImages($user),
+            'recentAlbums' => $this->getSerializedAlbums($user),
             'recentActivities' => $this->getRecentActivities(),
             'systemStatus' => $this->getSystemStatus(),
         ];
@@ -81,20 +79,13 @@ class DashboardController extends Controller
     {
         return [
             'stats' => [
-                'myImages' => $user->images()->count(),
-                'myAlbums' => $user->albums()->count(),
-                'totalViews' => $user->images()->sum('views_count'),
-                'totalLikes' => $user->images()->sum('likes_count'),
+                'myImages' => (int) $user->images()->count(),
+                'myAlbums' => (int) $user->albums()->count(),
+                'totalViews' => (int) $user->images()->sum('views_count'),
+                'totalLikes' => (int) $user->images()->sum('likes_count'),
             ],
-            'recentImages' => $user->images()
-                ->orderBy('created_at', 'desc')
-                ->take(8)
-                ->get(),
-            'recentAlbums' => $user->albums()
-                ->orderBy('updated_at', 'desc')
-                ->take(6)
-                ->withCount('images')
-                ->get(),
+            'recentImages' => $this->getSerializedImages($user),
+            'recentAlbums' => $this->getSerializedAlbums($user),
             'recentActivities' => [],
             'systemStatus' => [],
         ];
@@ -107,23 +98,64 @@ class DashboardController extends Controller
     {
         return [
             'stats' => [
-                'myImages' => $user->images()->count(),
-                'myAlbums' => $user->albums()->count(),
-                'totalViews' => $user->images()->sum('views_count'),
-                'totalLikes' => $user->images()->sum('likes_count'),
+                'myImages' => (int) $user->images()->count(),
+                'myAlbums' => (int) $user->albums()->count(),
+                'totalViews' => (int) $user->images()->sum('views_count'),
+                'totalLikes' => (int) $user->images()->sum('likes_count'),
             ],
-            'recentImages' => $user->images()
-                ->orderBy('created_at', 'desc')
-                ->take(8)
-                ->get(),
-            'recentAlbums' => $user->albums()
-                ->orderBy('updated_at', 'desc')
-                ->take(6)
-                ->withCount('images')
-                ->get(),
+            'recentImages' => $this->getSerializedImages($user),
+            'recentAlbums' => $this->getSerializedAlbums($user),
             'recentActivities' => [],
             'systemStatus' => [],
         ];
+    }
+
+    /**
+     * Get properly serialized images.
+     */
+    private function getSerializedImages(User $user): array
+    {
+        return $user->images()
+            ->select(['id', 'title', 'slug', 'storage_path', 'views_count', 'likes_count', 'created_at'])
+            ->orderBy('created_at', 'desc')
+            ->take(8)
+            ->get()
+            ->map(function ($image) {
+                return [
+                    'id' => $image->id,
+                    'title' => $image->title,
+                    'slug' => $image->slug,
+                    'storage_path' => $image->storage_path,
+                    'views_count' => (int) $image->views_count,
+                    'likes_count' => (int) $image->likes_count,
+                    'created_at' => $image->created_at->toISOString(),
+                ];
+            })
+            ->toArray();
+    }
+
+    /**
+     * Get properly serialized albums.
+     */
+    private function getSerializedAlbums(User $user): array
+    {
+        return $user->albums()
+            ->select(['id', 'title', 'slug', 'description', 'updated_at'])
+            ->withCount('images')
+            ->orderBy('updated_at', 'desc')
+            ->take(6)
+            ->get()
+            ->map(function ($album) {
+                return [
+                    'id' => $album->id,
+                    'title' => $album->title,
+                    'slug' => $album->slug,
+                    'description' => $album->description,
+                    'images_count' => (int) $album->images_count,
+                    'updated_at' => $album->updated_at->toISOString(),
+                ];
+            })
+            ->toArray();
     }
 
     /**
@@ -131,11 +163,10 @@ class DashboardController extends Controller
      */
     private function getRecentActivities(): array
     {
-        $activities = collect();
-
         try {
             // Recent image uploads
-            $recentImages = Image::with('owner')
+            $recentImages = Image::select(['id', 'title', 'created_at', 'user_id'])
+                ->with(['owner:id,name']) // Only select needed fields
                 ->orderBy('created_at', 'desc')
                 ->take(3)
                 ->get()
@@ -143,13 +174,14 @@ class DashboardController extends Controller
                     return [
                         'id' => $image->id,
                         'type' => 'image_uploaded',
-                        'message' => "{$image->owner->name} uploaded \"{$image->title}\"",
-                        'timestamp' => $image->created_at,
+                        'message' => ($image->owner->name ?? 'Unknown') . " uploaded \"{$image->title}\"",
+                        'timestamp' => $image->created_at->toISOString(),
                     ];
                 });
 
             // Recent albums
-            $recentAlbums = Album::with('owner')
+            $recentAlbums = Album::select(['id', 'title', 'created_at', 'user_id'])
+                ->with(['owner:id,name']) // Only select needed fields
                 ->orderBy('created_at', 'desc')
                 ->take(2)
                 ->get()
@@ -157,19 +189,21 @@ class DashboardController extends Controller
                     return [
                         'id' => $album->id,
                         'type' => 'album_created',
-                        'message' => "{$album->owner->name} created album \"{$album->title}\"",
-                        'timestamp' => $album->created_at,
+                        'message' => ($album->owner->name ?? 'Unknown') . " created album \"{$album->title}\"",
+                        'timestamp' => $album->created_at->toISOString(),
                     ];
                 });
 
-            return $activities
+            return collect()
                 ->merge($recentImages)
                 ->merge($recentAlbums)
                 ->sortByDesc('timestamp')
                 ->take(5)
                 ->values()
-                ->all();
+                ->toArray();
+
         } catch (\Exception $e) {
+            \Log::error('Dashboard activities error: ' . $e->getMessage());
             return [];
         }
     }
@@ -184,6 +218,7 @@ class DashboardController extends Controller
             $dbStatus = 'healthy';
         } catch (\Exception $e) {
             $dbStatus = 'error';
+            \Log::error('Database connection error: ' . $e->getMessage());
         }
 
         return [

@@ -661,4 +661,3 @@ const deleteImage = () => {
   }
 }
 </script>
-/*

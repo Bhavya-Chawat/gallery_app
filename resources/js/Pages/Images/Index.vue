@@ -2,8 +2,8 @@
   <AppLayout>
     <Head :title="pageTitle" />
 
-    <!-- Animated Background -->
-    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+    <!-- Animated Background - FIXED: Proper z-index -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none -z-10">
       <!-- Mesh Background -->
       <svg class="absolute inset-0 w-full h-full opacity-20" viewBox="0 0 100 100" preserveAspectRatio="none">
         <defs>
@@ -52,7 +52,7 @@
           <div class="flex items-center space-x-4 animate-fade-in-up" style="animation-delay: 0.2s;">
             <Link
               v-if="canUpload"
-              :href="route('upload')"
+              href="/upload"
               class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-violet-600 to-cyan-600 
                      hover:from-violet-500 hover:to-cyan-500 text-white font-semibold rounded-xl 
                      transition-all duration-300 transform hover:scale-105 hover:shadow-2xl hover:shadow-violet-500/25 
@@ -328,8 +328,8 @@
                 :style="{ animationDelay: (0.02 * index) + 's' }"
               >
                 <!-- Selection Checkbox (My Images only) -->
-                <div v-if="isMyImages" class="absolute top-3 left-3 z-20">
-                  <label class="relative block cursor-pointer group/checkbox">
+                <div v-if="isMyImages" class="absolute top-3 left-3 z-30">
+                  <label class="relative block cursor-pointer group/checkbox" @click.stop>
                     <input
                       v-model="selectedImages"
                       :value="image.id"
@@ -342,7 +342,7 @@
                 </div>
 
                 <!-- Privacy Badge (My Images only) -->
-                <div v-if="isMyImages" class="absolute top-3 right-3 z-20">
+                <div v-if="isMyImages" class="absolute top-3 right-3 z-30">
                   <span
                     class="px-2 py-1 text-xs font-medium rounded-lg backdrop-blur-md border transition-all duration-300"
                     :class="{
@@ -356,26 +356,29 @@
                 </div>
 
                 <!-- Published Status Badge (My Images only) -->
-                <div v-if="isMyImages && !image.is_published" class="absolute bottom-3 left-3 z-20">
+                <div v-if="isMyImages && !image.is_published" class="absolute bottom-3 left-3 z-30">
                   <span class="px-2 py-1 text-xs font-medium bg-slate-700/80 text-slate-300 rounded-lg backdrop-blur-md border border-slate-600/50">
                     Draft
                   </span>
                 </div>
 
-                <!-- Image -->
-                <div class="relative w-full h-full overflow-hidden">
+                <!-- FIXED: Image with proper click handling -->
+                <div 
+                  class="relative w-full h-full overflow-hidden cursor-pointer"
+                  @click="openLightbox(image)"
+                >
                   <img
                     :src="getImageUrl(image)"
                     :alt="image.alt_text || image.title"
-                    class="w-full h-full object-cover cursor-pointer transition-all duration-700 group-hover:scale-110"
-                    @click="openLightbox(image)"
+                    class="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
                     loading="lazy"
+                    draggable="false"
                   />
                   <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
                 </div>
 
                 <!-- Title Overlay -->
-                <div class="absolute bottom-0 left-0 right-0 p-3 transform translate-y-full group-hover:translate-y-0 transition-all duration-300">
+                <div class="absolute bottom-0 left-0 right-0 p-3 transform translate-y-full group-hover:translate-y-0 transition-all duration-300 pointer-events-none">
                   <div class="backdrop-blur-md bg-black/40 rounded-lg p-2 border border-white/10">
                     <p class="text-xs font-medium text-white truncate">
                       {{ image.title || 'Untitled' }}
@@ -400,7 +403,7 @@
               <h3 class="text-xl font-semibold text-slate-300 mb-2">{{ getEmptyMessage() }}</h3>
               <div v-if="canUpload && isMyImages" class="mt-8">
                 <Link
-                  :href="route('upload')"
+                  href="/upload"
                   class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-violet-600 to-cyan-600 
                          hover:from-violet-500 hover:to-cyan-500 text-white font-semibold rounded-xl 
                          transition-all duration-300 transform hover:scale-105 hover:shadow-2xl hover:shadow-violet-500/25 
@@ -428,12 +431,13 @@
       </div>
     </div>
 
-    <!-- Lightbox -->
+    <!-- FIXED: Lightbox with proper z-index -->
     <Lightbox
       v-if="showLightbox"
       :images="images.data"
       :initial-index="currentImageIndex"
       @close="showLightbox = false"
+      class="fixed inset-0 z-[9999]"
     />
   </AppLayout>
 </template>
@@ -441,7 +445,8 @@
 <script setup>
 import { ref, reactive, computed } from 'vue'
 import { Head, Link, router, usePage } from '@inertiajs/vue3'
-import route from 'ziggy-js'
+// FIXED: Remove route import to avoid errors
+// import route from 'ziggy-js'
 import { PlusIcon, PhotoIcon } from '@heroicons/vue/24/outline'
 
 import AppLayout from '@/Layouts/AppLayout.vue'
@@ -499,16 +504,16 @@ const hasFilters = computed(() => {
   )
 })
 
-// FIXED: Methods with proper route handling
+// FIXED: Methods with hardcoded routes
 const search = () => {
   const cleanForm = Object.fromEntries(
     Object.entries(searchForm).filter(([key, value]) => value !== '')
   )
   
-  // FIXED: Use correct route based on context
-  const routeName = props.isMyImages ? 'my.images' : 'gallery.index'
+  // FIXED: Use hardcoded routes
+  const routeName = props.isMyImages ? '/my/images' : '/gallery'
   
-  router.get(route(routeName), cleanForm, {
+  router.get(routeName, cleanForm, {
     preserveState: true,
     replace: true,
   })
@@ -530,9 +535,19 @@ const getImageUrl = (image) => {
   return '/images/placeholder.jpg'
 }
 
+// FIXED: Improved lightbox opening
 const openLightbox = (image) => {
+  console.log('Opening lightbox for:', image.title) // Debug log
   currentImageIndex.value = props.images.data.findIndex(img => img.id === image.id)
   showLightbox.value = true
+  // Prevent body scrolling when lightbox is open
+  document.body.style.overflow = 'hidden'
+}
+
+// FIXED: Close lightbox handler
+const closeLightbox = () => {
+  showLightbox.value = false
+  document.body.style.overflow = 'auto'
 }
 
 const toggleSelectAll = () => {
@@ -573,7 +588,8 @@ const executeBulkAction = () => {
     data.album_id = selectedAlbumId.value
   }
 
-  router.post(route('images.bulk'), data, {
+  // FIXED: Use hardcoded route
+  router.post('/images/bulk', data, {
     onSuccess: () => {
       clearSelection()
       bulkActionLoading.value = false

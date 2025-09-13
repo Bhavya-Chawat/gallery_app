@@ -7,20 +7,6 @@ defineProps({
 </script>
 
 <template>
-    <label class="block text-sm font-medium text-gray-700">
-        <span v-if="value">{{ value }}</span>
-        <span v-else><slot /></span>
-    </label>
-</template>
-/*<script setup>
-defineProps({
-    value: {
-        type: String,
-    },
-});
-</script>
-
-<template>
     <label class="group relative block text-sm font-medium text-slate-300 transition-all duration-300 hover:text-transparent hover:bg-clip-text hover:bg-gradient-to-r hover:from-violet-400 hover:via-purple-400 hover:to-cyan-400 cursor-pointer">
         <!-- Animated background elements -->
         <div class="absolute inset-0 -z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">

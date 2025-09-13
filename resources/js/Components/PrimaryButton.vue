@@ -1,12 +1,5 @@
 <template>
     <button
-        class="inline-flex items-center rounded-md border border-transparent bg-gray-800 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition duration-150 ease-in-out hover:bg-gray-700 focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 active:bg-gray-900"
-    >
-        <slot />
-    </button>
-</template>
-/*<template>
-    <button
         class="group relative inline-flex items-center rounded-lg border border-transparent bg-gradient-to-r from-violet-600 via-purple-600 to-cyan-600 px-6 py-3 text-xs font-semibold uppercase tracking-widest text-white transition-all duration-300 ease-out hover:from-violet-500 hover:via-purple-500 hover:to-cyan-500 focus:from-violet-500 focus:via-purple-500 focus:to-cyan-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:ring-offset-2 focus:ring-offset-slate-900 active:from-violet-700 active:via-purple-700 active:to-cyan-700 transform hover:scale-105 active:scale-95 overflow-hidden shadow-lg shadow-violet-500/25 hover:shadow-xl hover:shadow-violet-500/40"
     >
         <!-- Animated mesh background -->

@@ -92,7 +92,7 @@
         <div class="flex items-center space-x-4">
           <Link
             v-if="canUpload"
-            :href="route('upload')"
+            href="/upload"
             class="group relative inline-flex items-center px-6 py-3 border border-transparent rounded-xl 
                    font-bold text-sm text-white uppercase tracking-wider 
                    bg-gradient-to-r from-violet-600 via-purple-600 to-cyan-600 
@@ -135,7 +135,7 @@
                   <h3 class="text-xl font-bold text-white">
                     Welcome back, 
                     <span class="bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent">
-                      {{ user.name }}
+                      {{ user?.name || 'User' }}
                     </span>!
                   </h3>
                   <p class="mt-1 text-slate-300">
@@ -150,7 +150,7 @@
         </div>
 
         <!-- Storage Usage -->
-        <div class="animate-fade-in-up" style="animation-delay: 0.2s">
+        <div v-if="storageUsed !== undefined && storageQuota !== undefined" class="animate-fade-in-up" style="animation-delay: 0.2s">
           <StorageUsageCard
             :used="storageUsed"
             :quota="storageQuota"
@@ -159,14 +159,14 @@
         </div>
 
         <!-- Stats Cards -->
-        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 animate-fade-in-up" 
+        <div v-if="stats" class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 animate-fade-in-up" 
              style="animation-delay: 0.3s">
           <div class="animate-slide-in-up" style="animation-delay: 0.4s">
             <StatCard
               title="My Images"
               :value="stats.myImages || 0"
               icon="PhotoIcon"
-              :href="route('my.images')"
+              href="/my/images"
             />
           </div>
           <div class="animate-slide-in-up" style="animation-delay: 0.5s">
@@ -174,7 +174,7 @@
               title="My Albums"
               :value="stats.myAlbums || 0"
               icon="FolderIcon"
-              :href="route('my.albums')"
+              href="/my/albums"
             />
           </div>
           <div class="animate-slide-in-up" style="animation-delay: 0.6s">
@@ -194,7 +194,7 @@
         </div>
 
         <!-- Admin Stats (if admin) -->
-        <div v-if="isAdmin" 
+        <div v-if="isAdmin && stats" 
              class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 animate-fade-in-up" 
              style="animation-delay: 0.4s">
           <div class="animate-slide-in-up" style="animation-delay: 0.5s">
@@ -203,7 +203,7 @@
               :value="stats.totalUsers || 0"
               icon="UsersIcon"
               color="green"
-              :href="route('admin.users.index')"
+              href="/admin/users"
             />
           </div>
           <div class="animate-slide-in-up" style="animation-delay: 0.6s">
@@ -220,16 +220,16 @@
               :value="stats.pendingComments || 0"
               icon="ChatBubbleLeftRightIcon"
               color="yellow"
-              :href="route('admin.moderation.comments')"
+              href="/admin/moderation/comments"
             />
           </div>
           <div class="animate-slide-in-up" style="animation-delay: 0.8s">
             <StatCard
               title="System Health"
-              :value="systemStatus.overall || 'Unknown'"
+              :value="systemStatus?.overall || 'Unknown'"
               icon="ShieldCheckIcon"
-              :color="systemStatus.color || 'gray'"
-              :href="route('admin.system.index')"
+              :color="systemStatus?.color || 'gray'"
+              href="/admin/system"
             />
           </div>
         </div>
@@ -258,7 +258,7 @@
                       <h3 class="text-xl font-bold text-white">Recent Images</h3>
                     </div>
                     <Link
-                      :href="route('my.images')"
+                      href="/my/images"
                       class="text-sm bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent 
                              hover:from-white hover:to-white transition-all duration-300 font-semibold
                              hover:scale-105 transform"
@@ -267,7 +267,7 @@
                     </Link>
                   </div>
                   
-                  <div v-if="recentImages.length > 0" class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  <div v-if="recentImages && recentImages.length > 0" class="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     <div
                       v-for="(image, index) in recentImages.slice(0, 6)"
                       :key="image.id"
@@ -276,7 +276,7 @@
                              transform hover:scale-105 border border-white/10 hover:border-white/20"
                       :style="{ animationDelay: (index * 0.1) + 's' }"
                     >
-                      <Link :href="route('images.show', image.slug)">
+                      <Link :href="`/images/${image.slug || image.id}`">
                         <img
                           :src="getImageUrl(image, 'small')"
                           :alt="image.alt_text || image.title"
@@ -297,7 +297,7 @@
                     <p class="text-slate-300 mb-6">Get started by uploading your first image.</p>
                     <div>
                       <Link
-                        :href="route('upload')"
+                        href="/upload"
                         class="inline-flex items-center px-6 py-3 border border-transparent 
                                rounded-xl font-semibold text-sm text-white 
                                bg-gradient-to-r from-violet-600 to-cyan-600 
@@ -338,7 +338,7 @@
                       <h3 class="text-xl font-bold text-white">Recent Albums</h3>
                     </div>
                     <Link
-                      :href="route('my.albums')"
+                      href="/my/albums"
                       class="text-sm bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent 
                              hover:from-white hover:to-white transition-all duration-300 font-semibold
                              hover:scale-105 transform"
@@ -347,7 +347,7 @@
                     </Link>
                   </div>
                   
-                  <div v-if="recentAlbums.length > 0" class="space-y-4">
+                  <div v-if="recentAlbums && recentAlbums.length > 0" class="space-y-4">
                     <div
                       v-for="(album, index) in recentAlbums.slice(0, 4)"
                       :key="album.id"
@@ -365,14 +365,14 @@
                       </div>
                       <div class="ml-4 flex-1 min-w-0">
                         <Link
-                          :href="route('albums.show', album.slug)"
+                          :href="`/albums/${album.slug || album.id}`"
                           class="text-base font-bold text-white hover:text-cyan-300 
                                  transition-colors duration-300"
                         >
                           {{ album.title }}
                         </Link>
                         <p class="text-sm text-slate-400 mt-1 group-hover:text-slate-300 transition-colors duration-300">
-                          {{ album.images_count }} image{{ album.images_count !== 1 ? 's' : '' }}
+                          {{ album.images_count || 0 }} image{{ (album.images_count || 0) !== 1 ? 's' : '' }}
                         </p>
                       </div>
                       <div class="text-xs text-slate-500 group-hover:text-slate-400 transition-colors duration-300">
@@ -390,7 +390,7 @@
                     <p class="text-slate-300 mb-6">Create your first album to organize your images.</p>
                     <div>
                       <Link
-                        :href="route('albums.create')"
+                        href="/albums/create"
                         class="inline-flex items-center px-6 py-3 border border-transparent 
                                rounded-xl font-semibold text-sm text-white 
                                bg-gradient-to-r from-cyan-600 to-purple-600 
@@ -411,7 +411,7 @@
         </div>
 
         <!-- Recent Activity (for admins) -->
-        <div v-if="isAdmin && recentActivities.length > 0" 
+        <div v-if="isAdmin && recentActivities && recentActivities.length > 0" 
              class="animate-fade-in-up" style="animation-delay: 0.7s">
           <div class="relative group">
             <!-- Glow effect -->
@@ -568,18 +568,18 @@ import {
   ShieldCheckIcon
 } from '@heroicons/vue/24/outline'
 
-// Props
+// Props with proper defaults
 const props = defineProps({
-  user: Object,
-  stats: Object,
-  recentImages: Array,
-  recentAlbums: Array,
-  recentActivities: Array,
-  storageUsed: Number,
-  storageQuota: Number,
-  canUpload: Boolean,
-  isAdmin: Boolean,
-  systemStatus: Object,
+  user: { type: Object, default: () => ({}) },
+  stats: { type: Object, default: () => ({}) },
+  recentImages: { type: Array, default: () => [] },
+  recentAlbums: { type: Array, default: () => [] },
+  recentActivities: { type: Array, default: () => [] },
+  storageUsed: { type: Number, default: 0 },
+  storageQuota: { type: Number, default: 0 },
+  canUpload: { type: Boolean, default: false },
+  isAdmin: { type: Boolean, default: false },
+  systemStatus: { type: Object, default: () => ({}) },
 })
 
 // Reactive data
@@ -596,36 +596,47 @@ const storageUsagePercentage = computed(() => {
 
 // Methods
 const formatNumber = (number) => {
+  if (!number || number === 0) return '0'
   if (number >= 1000000) {
     return (number / 1000000).toFixed(1) + 'M'
   }
   if (number >= 1000) {
     return (number / 1000).toFixed(1) + 'K'
   }
-  return number?.toString() || '0'
+  return number.toString()
 }
 
 const formatDate = (date) => {
-  return new Date(date).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric'
-  })
+  if (!date) return 'Unknown'
+  try {
+    return new Date(date).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric'
+    })
+  } catch (e) {
+    return 'Unknown'
+  }
 }
 
 const formatTimeAgo = (timestamp) => {
-  const now = new Date()
-  const time = new Date(timestamp)
-  const diffInSeconds = Math.floor((now - time) / 1000)
-  
-  if (diffInSeconds < 60) return 'just now'
-  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`
-  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`
-  return `${Math.floor(diffInSeconds / 86400)}d ago`
+  if (!timestamp) return 'Unknown'
+  try {
+    const now = new Date()
+    const time = new Date(timestamp)
+    const diffInSeconds = Math.floor((now - time) / 1000)
+    
+    if (diffInSeconds < 60) return 'just now'
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`
+    return `${Math.floor(diffInSeconds / 86400)}d ago`
+  } catch (e) {
+    return 'Unknown'
+  }
 }
 
 const getImageUrl = (image, size = 'medium') => {
-  // This would typically be a helper function to generate image URLs
-  return image.url || `/storage/images/${image.filename}`
+  if (!image) return '/placeholder.jpg'
+  return image.url || `/storage/images/${image.filename}` || '/placeholder.jpg'
 }
 
 const getActivityIcon = (type) => {
@@ -640,7 +651,7 @@ const getActivityIcon = (type) => {
 }
 
 const requestAccess = () => {
-  form.post(route('request.upload.access'), {
+  form.post('/request/upload/access', {
     onSuccess: () => {
       showRequestModal.value = false
       // Could show a success toast here

@@ -2,28 +2,6 @@
   <Link
     :href="href"
     :class="[
-      'block w-full pl-3 pr-4 py-2 border-l-4 text-left text-base font-medium transition duration-150 ease-in-out focus:outline-none',
-      active
-        ? 'border-blue-400 text-blue-700 bg-blue-50 focus:text-blue-800 focus:bg-blue-100 focus:border-blue-700'
-        : 'border-transparent text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:border-gray-300 focus:text-gray-800 focus:bg-gray-50 focus:border-gray-300'
-    ]"
-  >
-    <slot />
-  </Link>
-</template>
-
-<script setup>
-import { Link } from '@inertiajs/vue3'
-
-defineProps({
-  href: String,
-  active: Boolean,
-})
-</script>
-/*<template>
-  <Link
-    :href="href"
-    :class="[
       'group relative block w-full pl-4 pr-6 py-3 border-l-4 text-left text-base font-medium transition-all duration-300 ease-out focus:outline-none overflow-hidden',
       active
         ? 'border-violet-400 text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-purple-400 to-cyan-400 bg-gradient-to-r from-violet-500/20 via-purple-500/20 to-cyan-500/20 backdrop-blur-sm focus:from-violet-400 focus:via-purple-400 focus:to-cyan-400 focus:bg-gradient-to-r focus:from-violet-500/30 focus:via-purple-500/30 focus:to-cyan-500/30 focus:border-violet-300 shadow-lg shadow-violet-500/20 animate-active-glow'
